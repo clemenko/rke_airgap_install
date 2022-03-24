@@ -1,0 +1,141 @@
+# clemenko
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flask
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask
+  namespace: flask
+  labels:
+    app: flask
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: flask
+  template:
+    metadata:
+      labels:
+        app: flask
+    spec:
+      containers:
+      - name: flask
+        securityContext:
+          allowPrivilegeEscalation: false
+        image: localhost:5000/flask/flask_simple
+        ports:
+        - containerPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: flask
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongo
+        image: localhost:5000/flask/mongo
+        securityContext:
+          allowPrivilegeEscalation: false
+        ports:
+        - containerPort: 27017
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: flask
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: localhost:5000/flask/redis
+        securityContext:
+          allowPrivilegeEscalation: false
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: flask
+  name: flask
+  namespace: flask
+spec:
+  selector:
+    app: flask
+  ports:
+  - protocol: TCP
+    port: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: redis
+  name: redis
+  namespace: flask
+spec:
+  selector:
+    app: redis
+  ports:
+  - protocol: TCP
+    port: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: mongo
+  name: mongo
+  namespace: flask
+spec:
+  selector:
+    app: mongo
+  ports:
+  - protocol: TCP
+    port: 27017
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flask
+  namespace: flask
+spec:
+  rules:
+  - host: flask.awesome.sauce
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: flask
+            port:
+              number: 5000

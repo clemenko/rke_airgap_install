@@ -1,0 +1,123 @@
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Images
+metadata:
+  name: rancher-images
+spec:       
+  images:
+    - name: quay.io/jetstack/cert-manager-cainjector:v1.13.3
+    - name: quay.io/jetstack/cert-manager-controller:v1.13.3
+    - name: quay.io/jetstack/cert-manager-webhook:v1.13.3
+    - name: quay.io/jetstack/cert-manager-ctl:v1.13.3
+    - name: docker.io/neuvector/enforcer:5.2.4-s1
+    - name: docker.io/neuvector/controller:5.2.4-s1
+    - name: docker.io/neuvector/manager:5.2.4-s1
+    - name: docker.io/neuvector/scanner:latest
+    - name: docker.io/neuvector/updater:latest
+    - name: longhornio/csi-attacher:v4.2.0
+    - name: longhornio/csi-provisioner:v3.4.1
+    - name: longhornio/csi-resizer:v1.7.0
+    - name: longhornio/csi-snapshotter:v6.2.1
+    - name: longhornio/csi-node-driver-registrar:v2.7.0
+    - name: longhornio/livenessprobe:v2.9.0
+    - name: longhornio/backing-image-manager:v1.5.3
+    - name: longhornio/longhorn-engine:v1.5.3
+    - name: longhornio/longhorn-instance-manager:v1.5.3
+    - name: longhornio/longhorn-manager:v1.5.3
+    - name: longhornio/longhorn-share-manager:v1.5.3
+    - name: longhornio/longhorn-ui:v1.5.3
+    - name: longhornio/support-bundle-kit:v0.0.27
+    - name: rancher/backup-restore-operator:v4.0.0
+    - name: rancher/calico-cni:v3.26.3-rancher1
+    - name: rancher/cis-operator:v1.0.12
+    - name: rancher/coreos-kube-state-metrics:v1.9.7
+    - name: rancher/coreos-prometheus-config-reloader:v0.38.1
+    - name: rancher/coreos-prometheus-operator:v0.38.1
+    - name: rancher/externalip-webhook:v1.0.1
+    - name: rancher/flannel-cni:v0.3.0-rancher8
+    - name: rancher/fleet-agent:v0.9.0
+    - name: rancher/fleet:v0.9.0
+    - name: rancher/gitjob:v0.1.96
+    - name: rancher/grafana-grafana:7.1.5
+    - name: rancher/hardened-calico:v3.26.3-build20231109
+    - name: rancher/hardened-cluster-autoscaler:v1.8.6-build20230609
+    - name: rancher/hardened-cni-plugins:v1.2.0-build20231009
+    - name: rancher/hardened-coredns:v1.10.1-build20230607
+    - name: rancher/hardened-dns-node-cache:1.22.20-build20230607
+    - name: rancher/hardened-etcd:v3.5.9-k3s1-build20230802
+    - name: rancher/hardened-flannel:v0.23.0-build20231109
+    - name: rancher/hardened-k8s-metrics-server:v0.6.3-build20230607
+    - name: rancher/hardened-kubernetes:v1.27.8-rke2r1-build20231115
+    - name: rancher/hardened-multus-cni:v4.0.2-build20230811
+    - name: rancher/hardened-node-feature-discovery:v0.14.1-build20230926
+    - name: rancher/hardened-whereabouts:v0.6.2-build20230717
+    - name: rancher/helm-project-operator:v0.2.1
+    - name: rancher/istio-kubectl:1.5.10
+    - name: rancher/jimmidyson-configmap-reload:v0.3.0
+    - name: rancher/k3s-upgrade:v1.27.8-k3s2
+    - name: rancher/klipper-helm:v0.8.2-build20230815
+    - name: rancher/klipper-lb:v0.4.4
+    - name: rancher/kube-api-auth:v0.2.0
+    - name: rancher/kubectl:v1.28.1
+    - name: rancher/library-nginx:1.19.2-alpine
+    - name: rancher/local-path-provisioner:v0.0.24
+    - name: rancher/machine:v0.15.0-rancher106
+    - name: rancher/mirrored-cluster-api-controller:v1.4.4
+    - name: rancher/nginx-ingress-controller:nginx-1.9.4-rancher1
+    - name: rancher/pause:3.6
+    - name: rancher/prom-alertmanager:v0.21.0
+    - name: rancher/prom-node-exporter:v1.0.1
+    - name: rancher/prom-prometheus:v2.18.2
+    - name: rancher/prometheus-auth:v0.2.2
+    - name: rancher/prometheus-federator:v0.3.4
+    - name: rancher/pushprox-client:v0.1.0-rancher2-client
+    - name: rancher/pushprox-proxy:v0.1.0-rancher2-proxy
+    - name: rancher/rancher-agent:v2.8.1
+    - name: rancher/rancher-csp-adapter:v3.0.0
+    - name: rancher/rancher-webhook:v0.4.2
+    - name: rancher/rancher:v2.8.1
+    - name: rancher/rke-tools:v0.1.96
+    - name: rancher/rke2-cloud-provider:v1.28.2-build20231016
+    - name: rancher/rke2-runtime:v1.27.8-rke2r1
+    - name: rancher/rke2-upgrade:v1.27.8-rke2r1
+    - name: rancher/security-scan:v0.2.13
+    - name: rancher/shell:v0.1.22
+    - name: rancher/system-agent-installer-k3s:v1.27.8-k3s2
+    - name: rancher/system-agent-installer-rke2:v1.27.8-rke2r1
+    - name: rancher/system-agent:v0.3.4-suc
+    - name: rancher/system-upgrade-controller:v0.13.1
+    - name: rancher/ui-plugin-catalog:1.1.0
+    - name: rancher/ui-plugin-operator:v0.1.1
+    - name: rancher/webhook-receiver:v0.2.5
+---
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Charts
+metadata:
+  name: rancher-charts
+spec:
+  charts:
+    - name: rancher
+      repoURL: https://releases.rancher.com/server-charts/latest
+      version: v2.8.1
+    - name: cert-manager
+      repoURL: https://charts.jetstack.io
+      version: v1.13.3
+    - name: longhorn
+      repoURL: https://charts.longhorn.io
+      version: v1.5.3
+    - name: core
+      repoURL: https://neuvector.github.io/neuvector-helm/
+      version: 2.7.1
+---
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Files
+metadata:
+  name: rancher-files
+spec:
+  files:
+    - path: https://get.rke2.io
+      name: install.sh
+    - path: https://github.com/rancher/rke2/releases/download/v1.26.12%2Brke2r1/rke2-images.linux-amd64.tar.zst
+    - path: https://github.com/rancher/rke2/releases/download/v1.26.12%2Brke2r1/rke2.linux-amd64.tar.gz
+    - path: https://github.com/rancher/rke2/releases/download/v1.26.12%2Brke2r1/sha256sum-amd64.txt
+    - path: https://github.com/rancher/rke2-packaging/releases/download/v1.26.12%2Brke2r1.stable.0/rke2-common-1.26.12.rke2r1-0.el9.x86_64.rpm
+    - path: https://github.com/rancher/rke2-selinux/releases/download/v0.17.stable.1/rke2-selinux-0.17-1.el9.noarch.rpm
