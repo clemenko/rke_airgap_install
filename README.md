@@ -1,9 +1,9 @@
 ---
-title: Simple RKE2, Longhorn, and Rancher Install
+title: Simple RKE2, Longhorn, and Rancher Install - AIR GAPPED
 author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 ---
 
-# Simple RKE2, Longhorn, and Rancher Install
+# Simple RKE2, Longhorn, and Rancher Install - AIR GAPPED
 
 ![logp](img/logo_long.jpg)
 
