@@ -7,6 +7,8 @@ author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 
 ![logp](img/logo_long.jpg)
 
+This guide is very similar to [Simple RKE2, Longhorn, and Rancher Install ](https://github.com/clemenko/rke_install_blog), except in one major way. This guide will lay everything out for an air gapped install.
+
 Throughout my career there has always been a disconnect between the documentation and the practical implementation. The Kubernetes (k8s) ecosystem is no stranger to this problem. This guide is a simple approach to installing Kubernetes and some REALLY useful tools. We will walk through installing all the following.
 
 - [RKE2](https://docs.rke2.io) - Security focused Kubernetes
@@ -42,18 +44,136 @@ Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
 
 ## Prerequisites
 
-The prerequisites are fairly simple. We need 3 linux servers with access to the internet. They can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). We need an `ssh` client to connect to the servers. And finally DNS to make things simple. Ideally we need a URL for the Rancher interface. For the purpose of the this guide let's use `rancher.dockr.life`. We will need to point that name to the first server of the cluster. While we are at it, a wildcard DNS for your domain will help as well.
+The prerequisites are fairly simple. We need 3 linux servers with one of the servers having access to the internet. To be fair we are going to use the internet to get the bits. They can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). We need an `ssh` client to connect to the servers. And finally DNS to make things simple. Ideally we need a URL for the Rancher interface. For the purpose of the this guide let's use `rancher.dockr.life`. We will need to point that name to the first server of the cluster. While we are at it, a wildcard DNS for your domain will help as well.
 
-## Linux Servers
+## Migration Server
 
-For the sake of this guide we are going to use [Ubuntu](https://ubuntu.com). Our goal is a simple deployment. The recommended size of each node is 4 Cores and 8GB of memory with at least 60GB of storage. One of the nice things about [Longhorn](https://longhorn.io) is that we do not need to attach additional storage. Here is an example list of servers. Please keep in mind that your server names can be anything. Just keep in mind which ones are the "server" and "agents".
+Because we are moving bit across an air gap we need a server on the internet. This server can be any OS. Because I am using a cloud provider I am going to spin a 4th Ubuntu server name `rancher4`. Most of the challenge of air gaps is getting all the bits. Don't ask me how I know. Let's ssh into `rancher4` to start the downloading process. Since we are connected to the internet we can install Docker easily enough. Once we have all the tars, and images we will run a docker registry for installing Rancher and Longhorn.
+
+### Docker Install
+
+```bash
+curl -L https://get.docker.com/ | bash -
+```
+
+### Get Tars - RKE2
+
+```bash
+# create install directory
+mkdir /root/rke2/
+cd /root/rke2/
+
+# download rke, rancher and longhorn
+curl -#OL https://github.com/rancher/rke2/releases/download/v1.23.4%2Brke2r2/rke2-images.linux-amd64.tar.zst
+curl -#OL https://github.com/rancher/rke2/releases/download/v1.23.4%2Brke2r2/rke2.linux-amd64.tar.gz
+curl -#OL https://github.com/rancher/rke2/releases/download/v1.23.4%2Brke2r2/sha256sum-amd64.txt
+
+# get the install script
+curl -sfL https://get.rke2.io --output install.sh
+```
+
+### Get Helm Charts
+
+```bash
+# create helm dir
+mkdir /root/helm/
+cd /root/helm/
+
+# get helm
+curl -#L https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# add repos
+helm repo add jetstack https://charts.jetstack.io
+helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+helm repo update
+
+# get charts
+helm pull jetstack/cert-manager
+helm pull rancher-latest/rancher
+
+# get the cert-manager crt
+curl -#LO https://github.com/jetstack/cert-manager/releases/download/v1.7.2/cert-manager.crds.yaml
+```
+
+### Get Images - Rancher & Longhorn
+
+```bash
+# create image dir
+mkdir /root/images/
+cd /root/images/
+
+# rancher image list 
+curl -#OL https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-images.txt
+
+# We need to add the cert-manager images
+helm template /root/helm/cert-manager-*.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g >> ./rancher-images.txt
+
+# helper scripts for collecting images
+curl -#OL https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-save-images.sh
+curl -#OL https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-load-images.sh
+
+# longhorn images
+curl -#OL https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/deploy/longhorn-images.txt
+
+# helper script
+curl -#L https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/scripts/save-images.sh -o longhorn-save-images.sh
+
+# chmod
+chmod 755 *.sh
+
+# get longhorn images
+./longhorn-save-images.sh --image-list longhorn-images.txt --images longhorn-images.tar.gz
+
+# get rancher images
+./rancher-save-images.sh --image-list rancher-images.txt
+```
+
+### Get Nerdctl
+
+```bash
+# in order to server out the images we need a utility called nerctl
+mkdir /root/nerdctl/
+cd /root/nerdctl/
+
+curl -#LO https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz
+
+# for later
+chmod 755 /usr/local/bin/nerdctl
+ln -s /run/k3s/containerd/containerd.sock /run/containerd/containerd.sock
+ln -s /usr/local/bin/nerdctl /usr/local/bin/docker
+```
+
+### Package and Move all the bits
+
+For this guide we do not actually need to package and move all the bits. We are going to install from this location. If this was an actual air gapped situation we would need to sneaker net the tarball over.
+
+```bash
+# cd /root
+cd /root
+
+# compress all the things
+tar -zvcf rke2_rancher_longhorn.tgz helm rke2 images nerdctl
+```
+
+### Unpackage all the bits
+
+Ideally, we would move `rke2_rancher_longhorn.tgz` to other 3 servers and unpack. However, to save time we are only going to move the RKE tar.
+
+```bash
+# untar
+cd /root/
+tar -zxvf rke_rancher_longhorn.tgz
+```
+
+## Cluster Servers
+
+For the sake of this guide we are going to use [Ubuntu](https://ubuntu.com). Our goal is a simple deployment. The recommended size of each node is 4 Cores and 8GB of memory with at least 80GB of storage. One of the nice things about [Longhorn](https://longhorn.io) is that we do not need to attach additional storage. Here is an example list of servers. Please keep in mind that your server names can be anything. Just keep in mind which ones are the "server" and "agents".
 
 | name | ip | memory | core | disk | os |
 |---| --- | --- | --- | --- | --- |
 |rancher1| 142.93.189.52  | 8192 | 4 | 160 | Ubuntu 21.10 x64 |
 |rancher2| 68.183.150.214 | 8192 | 4 | 160 | Ubuntu 21.10 x64 |
 |rancher3| 167.71.188.101 | 8192 | 4 | 160 | Ubuntu 21.10 x64 |
-
 
 For Kubernetes we will need to "set" one of the nodes as the control plane. Rancher1 looks like a winner for this. First we need to `ssh` into all three nodes and make sure we have all the updates and add a few things. For the record I am not a fan of software firewalls. Please feel free to reach to me to discuss. :D
 
@@ -83,7 +203,7 @@ systemctl stop firewalld
 systemctl disable firewalld
 
 # get updates, install nfs, and apply
-yum install -y nfs-utils cryptsetup iscsi-initiator-utils
+yum install -y nfs-utils cryptsetup iscsi-initiator-utils container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils
 
 # enable iscsi for Longhorn
 systemctl start iscsid.service
@@ -96,13 +216,13 @@ yum update -y
 yum clean all
 ```
 
-Cool, lets move on to the RKE2.
+Cool, lets move on to getting the bits.
 
 ## RKE2 Install
 
 ### RKE2 Server Install
 
-Now that we have all the nodes up to date, let's focus on `rancher1`. While this might seem controversial, `curl | bash` does work nicely. The install script will use the tarball install for **Ubuntu** and the RPM install for **Rocky/Centos**. Please be patient, the start command can take a minute. Here are the [rke2 docs](https://docs.rke2.io/install/methods/) and [install options](https://docs.rke2.io/install/install_options/install_options/) for reference.
+Now that we have all the nodes up to date, let's focus on `rancher1`. While this might seem controversial, `curl | bash` does work nicely. For the air gapped install we are going use the tarball we downloaded in the previous section. Here are the [rke2 docs](https://docs.rke2.io/install/methods/) and [air install](https://docs.rke2.io/install/airgap/) for reference.
 
 ```bash
 # On rancher1
