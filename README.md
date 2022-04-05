@@ -48,7 +48,7 @@ The prerequisites are fairly simple. We need 4 Rocky Linux servers with one of t
 
 ## Migration Server
 
-Because we are moving bit across an air gap we need a server on the internet. Because I am using a cloud provider I am going to spin a 4th Rocky Linux server name `rancher4`. Most of the challenge of air gaps is getting all the bits. Don't ask me how I know. Let's ssh into `rancher4` to start the downloading process. Since we are connected to the internet we can install a few tools like [Skopeo](https://github.com/containers/skopeo). Once we have all the tars, and images we will run a docker registry for installing Rancher and Longhorn.
+Because we are moving bit across an air gap we need a server on the internet. Because I am using a cloud provider I am going to spin a 4th Rocky Linux server name `rancher4`. Most of the challenge of air gaps is getting all the bits. Don't ask me how I know. Let's ssh into `rancher4` to start the downloading process. Since we are connected to the internet we can install a few tools like [Skopeo](https://github.com/containers/skopeo). Once we have all the tars, and images we will run a docker registry for installing Rancher and Longhorn. We are going to assume root access since this is a throw away server.
 
 ### Install Skopeo
 
@@ -87,11 +87,13 @@ curl -#L https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | b
 # add repos
 helm repo add jetstack https://charts.jetstack.io
 helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+helm repo add longhorn https://charts.longhorn.io
 helm repo update
 
 # get charts
 helm pull jetstack/cert-manager
 helm pull rancher-latest/rancher
+helm pull longhorn/longhorn
 
 # get the cert-manager crt
 curl -#LO https://github.com/jetstack/cert-manager/releases/download/v1.7.2/cert-manager.crds.yaml
@@ -101,36 +103,36 @@ curl -#LO https://github.com/jetstack/cert-manager/releases/download/v1.7.2/cert
 
 ```bash
 # create image dir
-mkdir /root/images/
+mkdir -p /root/images/{cert,rancher,longhorn}
 cd /root/images/
 
 # rancher image list 
-curl -#OL https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-images.txt
+curl -#L https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-images.txt -o ./rancher/rancher-images.txt
+
+# fix rancher list
+sed -i -e 's/busybox/library\/busybox/g' -e 's/registry/library\/registry/g' rancher/rancher-images.txt
 
 # We need to add the cert-manager images
-helm template /root/helm/cert-manager-*.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g >> ./rancher-images.txt
+helm template /root/helm/cert-manager-*.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g > ./cert/cert-manager-images.txt
 
-# helper scripts for collecting images
-curl -#OL https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-save-images.sh
-curl -#OL https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-load-images.sh
+# longhorn image list
+curl -#L https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/deploy/longhorn-images.txt -o ./longhorn/longhorn-images.txt
 
-# longhorn images
-curl -#OL https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/deploy/longhorn-images.txt
+# skopeo cert-manager - skopeo copy docker://alpine:latest docker-archive:alpine.tar:alpine:latest
+for i in $(cat cert/cert-manager-images.txt); do 
+  skopeo copy docker://$i docker-archive:cert/$(echo $i| awk -F/ '{print $3}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}')
+done
 
-# helper script
-curl -#L https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/scripts/save-images.sh -o longhorn-save-images.sh
+# skopeo - longhorn
+for i in $(cat longhorn/longhorn-images.txt); do 
+  skopeo copy docker://$i docker-archive:longhorn/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}')
+done
 
-# chmod
-chmod 755 *.sh
+# skopeo - Rancher - This will take time getting 360 images
+for i in $(cat rancher/rancher-images.txt); do 
+  skopeo copy docker://$i docker-archive:rancher/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}')
+done
 
-# skopeo 
-skopeo copy docker://alpine:latest docker-archive:alpine.tar:alpine:latest
-
-# get longhorn images
-./longhorn-save-images.sh --image-list longhorn-images.txt --images longhorn-images.tar.gz
-
-# get rancher images
-./rancher-save-images.sh --image-list rancher-images.txt
 ```
 
 ### Get Nerdctl
