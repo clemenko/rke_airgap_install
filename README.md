@@ -107,10 +107,18 @@ mkdir -p /root/images/{cert,rancher,longhorn}
 cd /root/images/
 
 # rancher image list 
-curl -#L https://github.com/rancher/rancher/releases/download/v2.6.3-patch2/rancher-images.txt -o ./rancher/rancher-images.txt
+curl -#L https://github.com/rancher/rancher/releases/download/v2.6.4/rancher-images.txt -o ./rancher/orig_rancher-images.txt
 
 # fix rancher list
-sed -i -e 's/busybox/library\/busybox/g' -e 's/registry/library\/registry/g' rancher/rancher-images.txt
+sed -i -e 's/registry/library\/registry/g' rancher/orig_rancher-images.txt
+for i in $(cat rancher/orig_rancher-images.txt|awk -F: '{print $1}'); do 
+  grep $i rancher/orig_rancher-images.txt | sort -Vr| head -1 >> rancher/version_sorted.txt
+done
+echo "library/busybox" > rancher/rancher-images.txt
+cat rancher/version_sorted.txt | sort -u >> rancher/rancher-images.txt
+
+# attempt to shorten the list
+cat rancher/orig_rancher-images.txt |grep -v 'v1.21\|v1.22.4\|v1.22.5' > rancher/rancher-images.txt 
 
 # We need to add the cert-manager images
 helm template /root/helm/cert-manager-*.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g > ./cert/cert-manager-images.txt
