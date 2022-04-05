@@ -44,16 +44,18 @@ Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
 
 ## Prerequisites
 
-The prerequisites are fairly simple. We need 3 linux servers with one of the servers having access to the internet. To be fair we are going to use the internet to get the bits. They can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). We need an `ssh` client to connect to the servers. And finally DNS to make things simple. Ideally we need a URL for the Rancher interface. For the purpose of the this guide let's use `rancher.dockr.life`. We will need to point that name to the first server of the cluster. While we are at it, a wildcard DNS for your domain will help as well.
+The prerequisites are fairly simple. We need 4 Rocky Linux servers with one of the servers having access to the internet. To be fair we are going to use the internet to get the bits. They can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). We need an `ssh` client to connect to the servers. And finally DNS to make things simple. Ideally we need a URL for the Rancher interface. For the purpose of the this guide let's use `rancher.dockr.life`. We will need to point that name to the first server of the cluster. While we are at it, a wildcard DNS for your domain will help as well.
 
 ## Migration Server
 
-Because we are moving bit across an air gap we need a server on the internet. This server can be any OS. Because I am using a cloud provider I am going to spin a 4th Ubuntu server name `rancher4`. Most of the challenge of air gaps is getting all the bits. Don't ask me how I know. Let's ssh into `rancher4` to start the downloading process. Since we are connected to the internet we can install Docker easily enough. Once we have all the tars, and images we will run a docker registry for installing Rancher and Longhorn.
+Because we are moving bit across an air gap we need a server on the internet. Because I am using a cloud provider I am going to spin a 4th Rocky Linux server name `rancher4`. Most of the challenge of air gaps is getting all the bits. Don't ask me how I know. Let's ssh into `rancher4` to start the downloading process. Since we are connected to the internet we can install a few tools like [Skopeo](https://github.com/containers/skopeo). Once we have all the tars, and images we will run a docker registry for installing Rancher and Longhorn.
 
-### Docker Install
+### Install Skopeo
+
+Skopeo is a great tool to inspect and interact with registries. We can use it to download the images in a clean manor.
 
 ```bash
-curl -L https://get.docker.com/ | bash -
+dnf -y install skopeo
 ```
 
 ### Get Tars - RKE2
@@ -121,6 +123,9 @@ curl -#L https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/scripts/save
 # chmod
 chmod 755 *.sh
 
+# skopeo 
+skopeo copy docker://alpine:latest docker-archive:alpine.tar:alpine:latest
+
 # get longhorn images
 ./longhorn-save-images.sh --image-list longhorn-images.txt --images longhorn-images.tar.gz
 
@@ -176,23 +181,6 @@ For the sake of this guide we are going to use [Ubuntu](https://ubuntu.com). Our
 |rancher3| 167.71.188.101 | 8192 | 4 | 160 | Ubuntu 21.10 x64 |
 
 For Kubernetes we will need to "set" one of the nodes as the control plane. Rancher1 looks like a winner for this. First we need to `ssh` into all three nodes and make sure we have all the updates and add a few things. For the record I am not a fan of software firewalls. Please feel free to reach to me to discuss. :D
-
-**Ubuntu**:
-
-```bash
-# Ubuntu instructions 
-# stop the software firewall
-systemctl stop ufw
-systemctl disable ufw
-
-# get updates, install nfs, and apply
-apt update
-apt install nfs-common -y  
-apt upgrade -y
-
-# clean up
-apt autoremove -y
-```
 
 **Rocky / Centos / RHEL**:
 
