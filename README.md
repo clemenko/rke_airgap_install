@@ -111,8 +111,8 @@ cd /root/images/
 # rancher image list 
 curl -#L https://github.com/rancher/rancher/releases/download/v2.6.4/rancher-images.txt -o ./rancher/orig_rancher-images.txt
 
-# fix/shorten rancher list
-sed -i -e 's/busybox/library\/busybox/' -e 's/registry/library\/registry/g' rancher/orig_rancher-images.txt
+# shorten rancher list with a sort
+sed -i -e '0,/busybox/s/busybox/library\/busybox/' -e 's/registry/library\/registry/g' rancher/orig_rancher-images.txt
 for i in $(cat rancher/orig_rancher-images.txt|awk -F: '{print $1}'); do 
   grep -w $i rancher/orig_rancher-images.txt | sort -Vr| head -1 >> rancher/version_unsorted.txt
 done
@@ -127,12 +127,12 @@ curl -#L https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/deploy/longh
 
 # skopeo cert-manager
 for i in $(cat cert/cert-manager-images.txt); do 
-  skopeo copy docker://$i docker-archive:cert/$(echo $i| awk -F/ '{print $3}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}')
+  skopeo copy docker://$i docker-archive:cert/$(echo $i| awk -F/ '{print $3}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') 
 done
 
 # skopeo - longhorn
 for i in $(cat longhorn/longhorn-images.txt); do 
-  skopeo copy docker://$i docker-archive:longhorn/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}')
+  skopeo copy docker://$i docker-archive:longhorn/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}') 
 done
 
 # skopeo - Rancher - This will take time getting all the images
