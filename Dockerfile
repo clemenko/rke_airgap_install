@@ -1,4 +1,4 @@
-FROM rockylinux
+FROM alpine
 
 ARG BUILD_DATE
 
@@ -10,9 +10,9 @@ LABEL org.opencontainers.image.authors="clemenko@gmail.com" \
       org.opencontainers.image.build="docker build -t clemenko/rancher_airgap --build-arg BUILD_DATE=$(date +%D) ." \
       org.opencontainers.image.run="docker run --rm -v /output/:/output/ clemenko/rancher_airgap" 
 
-RUN dnf -y install skopeo openssl
+RUN apk -U add curl skopeo openssl bash
 
-WORKDIR /opt/
+WORKDIR /output/
 
 COPY air_gap_all_the_things.sh /
 
