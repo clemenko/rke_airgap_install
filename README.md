@@ -169,9 +169,9 @@ cd /root
 tar -zvcf rke2_rancher_longhorn.tgz helm rke2 images nerdctl
 ```
 
-### Unpackage all the bits
+Move the tar to Rancher1. We will use this server as the "registry" for the entire cluster.
 
-Ideally, we would move `rke2_rancher_longhorn.tgz` to other 3 servers and unpack. However, to save time we are only going to move the RKE tar.
+### Unpackage all the bits
 
 ```bash
 # untar
@@ -179,7 +179,7 @@ cd /root/
 tar -zxvf rke_rancher_longhorn.tgz
 ```
 
-## Cluster Servers
+## Kubernetes Servers
 
 For the sake of this guide we are going to use [Ubuntu](https://ubuntu.com). Our goal is a simple deployment. The recommended size of each node is 4 Cores and 8GB of memory with at least 80GB of storage. One of the nice things about [Longhorn](https://longhorn.io) is that we do not need to attach additional storage. Here is an example list of servers. Please keep in mind that your server names can be anything. Just keep in mind which ones are the "server" and "agents".
 
