@@ -468,6 +468,8 @@ Now we have a default storage class for the cluster. This allows for the automat
 
 Yes we can automate all the things. Here is the repo I use automating the complete stack https://github.com/clemenko/rke2. This repo is for entertainment purposes only. There I use tools like pdsh to run parallel ssh into the nodes to complete a few tasks. Ansible would be a good choice for this. But I am old and like bash. Sorry the script is a beast. I need to clean it up.
 
+There may be a container that can get all the bits for you. Just going to put this here : https://github.com/clemenko/rke_airgap_install/blob/3ccba9b7990e3cbdc3a2e1597a1e01892072e3b2/Dockerfile#L11.
+
 ## Conclusion
 
 As we can see, setting up RKE2, Rancher and Longhorn is not that complicated. We can get deploy Kubernetes, a storage layer, and a management gui in a few minutes. Simple, right? One of the added benefits of using the Suse / Rancher stack is that all the pieces are modular. Use only what you need, when you need it. Hope this was helpful. Please feel free reach out, or open any issues at https://github.com/clemenko/rke_install_blog. 
