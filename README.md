@@ -169,6 +169,8 @@ cd /root
 tar -zvcf rke2_rancher_longhorn.tgz helm rke2 images nerdctl
 ```
 
+----- STOP ------
+
 Move the tar to Rancher1. We will use this server as the "registry" for the entire cluster.
 
 ### Unpackage all the bits
