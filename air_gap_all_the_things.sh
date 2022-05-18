@@ -65,7 +65,7 @@ function build () {
   sed -i -e '0,/busybox/s/busybox/library\/busybox/' -e 's/registry/library\/registry/g' rancher/orig_rancher-images.txt
   
   # remove things that are not needed and overlapped
-  sed -i -E '/neuvector|minio|gke|aks|eks|sriov|harvester|mirrored|longhorn|thanos|tekton|istio/d' rancher/orig_rancher-images.txt
+  sed -i -E '/neuvector|minio|gke|aks|eks|sriov|harvester|mirrored|longhorn|thanos|tekton|istio|multus/d' rancher/orig_rancher-images.txt
 
   # get latest version
   for i in $(cat rancher/orig_rancher-images.txt|awk -F: '{print $1}'); do 
