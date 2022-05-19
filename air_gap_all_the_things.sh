@@ -65,7 +65,7 @@ function build () {
   sed -i -e '0,/busybox/s/busybox/library\/busybox/' -e 's/registry/library\/registry/g' rancher/orig_rancher-images.txt
   
   # remove things that are not needed and overlapped
-  sed -i -E '/neuvector|minio|gke|aks|eks|sriov|harvester|mirrored|longhorn|thanos|tekton|istio|multus/d' rancher/orig_rancher-images.txt
+  sed -i -E '/neuvector|minio|gke|aks|eks|sriov|harvester|mirrored|longhorn|thanos|tekton|istio|multus|hyper|jenkins|windows/d' rancher/orig_rancher-images.txt
 
   # get latest version
   for i in $(cat rancher/orig_rancher-images.txt|awk -F: '{print $1}'); do 
@@ -103,15 +103,46 @@ function build () {
 
   cd /output
   echo - compress all the things
-  tar -zvcf /output/rke2_rancher_longhorn.tgz *
+  tar -I zstd -vcf /output/rke2_rancher_longhorn.zst $(ls)
+
+  # look at adding encryption - https://medium.com/@lumjjb/encrypting-container-images-with-skopeo-f733afb1aed4
+  
 }
 
 ################################# deploy ################################
 function deploy () {
- echo Untar the bits
- cd /output
- tar zxvf rke2_rancher_longhorn.tgz 
+  echo Untar the bits
+  mkdir rancher
+  tar -I zstd -vxf rke2_rancher_longhorn.zst -C rancher
 
+  echo Install rke2
+  useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
+  mkdir -p /etc/rancher/rke2/ /var/lib/rancher/rke2/server/manifests/;
+  echo -e "#disable: rke2-ingress-nginx\n#profile: cis-1.6\nselinux: false" > /etc/rancher/rke2/config.yaml; 
+
+  INSTALL_RKE2_ARTIFACT_PATH=/root/rancher/rke2$RKE_VERSION sh /root/output/rke2$RKE_VERSION/install.sh 
+  systemctl enable rke2-server.service && systemctl start rke2-server.service
+
+  # get node token
+  rsync -avP /var/lib/rancher/rke2/server/node-token 
+
+  # wait and add link
+  export KUBECONFIG=/etc/rancher/rke2/rke2.yaml 
+  ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
+
+  echo - Setup nerdctl
+  tar -zxvf rancher/nerdctl/nerdctl-0.18.0-linux-amd64.tar.gz -C rancher/nerdctl 
+  mv rancher/nerdctl/nerdctl /usr/local/bin
+  ln -s /run/k3s/containerd/containerd.sock /run/containerd/containerd.sock
+
+  echo - Setup nfs
+  # share out output directory
+
+  echo - run local registry
+
+  echo - load images
+
+# Adam made me use localhost:5000
 }
 
 ############################# usage ################################
