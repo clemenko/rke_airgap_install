@@ -20,8 +20,11 @@ command -v skopeo >/dev/null 2>&1 || { echo "$RED" " ** skopeo was not found. Pl
 ################################# build ################################
 function build () {
 
-  mkdir -p /output/rke2_$RKE_VERSION/
-  cd /output/rke2_$RKE_VERSION/
+  echo - Installing packages
+  yum install zstd skopeo -y
+
+  mkdir -p /opt/rke2_$RKE_VERSION/
+  cd /opt/rke2_$RKE_VERSION/
 
   echo - download rke, rancher and longhorn
   curl -#OL https://github.com/rancher/rke2/releases/download/$RKE_VERSION%2Brke2r2/rke2-images.linux-amd64.tar.zst
@@ -29,13 +32,13 @@ function build () {
   curl -#OL https://github.com/rancher/rke2/releases/download/$RKE_VERSION%2Brke2r2/sha256sum-amd64.txt
 
   echo - get the install script
-  curl -sfL https://get.rke2.io --output install.sh
+  curl -sfL https://get.rke2.io -o install.sh
 
   echo - Get Helm Charts
 
   echo - create helm dir
-  mkdir -p /output/helm/
-  cd /output/helm/
+  mkdir -p /opt/helm/
+  cd /opt/helm/
 
   echo - get helm
   curl -#L https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
@@ -54,8 +57,8 @@ function build () {
   echo - Get Images - Rancher/Longhorn
 
   echo - create image dir
-  mkdir -p /output/images/{cert,rancher,longhorn}
-  cd /output/images/
+  mkdir -p /opt/images/{cert,rancher,longhorn}
+  cd /opt/images/
 
   echo - rancher image list 
   curl -#L https://github.com/rancher/rancher/releases/download/$RANCHER_VERSION/rancher-images.txt -o rancher/orig_rancher-images.txt
@@ -76,7 +79,7 @@ function build () {
   cat rancher/version_unsorted.txt | sort -u >> rancher/rancher-images.txt
 
   echo - We need to add the cert-manager images
-  helm template /output/helm/cert-manager-$CERT_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g > cert/cert-manager-images.txt
+  helm template /opt/helm/cert-manager-$CERT_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g > cert/cert-manager-images.txt
 
   echo - longhorn image list
   curl -#L https://raw.githubusercontent.com/longhorn/longhorn/$LONGHORN_VERSION/deploy/longhorn-images.txt -o longhorn/longhorn-images.txt
@@ -96,14 +99,16 @@ function build () {
     skopeo copy docker://$i docker-archive:rancher/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}')
   done
 
+  mv rancher/busybox.tar rancher/busybox_latest.tar
+
   echo - Get Nerdctl
-  mkdir -p /output/nerdctl/
-  cd /output/nerdctl/
+  mkdir -p /opt/nerdctl/
+  cd /opt/nerdctl/
   curl -#LO https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz
 
-  cd /output
+  cd /opt
   echo - compress all the things
-  tar -I zstd -vcf /output/rke2_rancher_longhorn.zst $(ls)
+  tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst $(ls)
 
   # look at adding encryption - https://medium.com/@lumjjb/encrypting-container-images-with-skopeo-f733afb1aed4
   
@@ -111,38 +116,58 @@ function build () {
 
 ################################# deploy ################################
 function deploy () {
+  # this is for the first node
   echo Untar the bits
-  mkdir rancher
-  tar -I zstd -vxf rke2_rancher_longhorn.zst -C rancher
+  mkdir /opt/rancher
+  yum install zstd nfs-utils iptables skopeo -y
+  tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
 
   echo Install rke2
   useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
-  mkdir -p /etc/rancher/rke2/ /var/lib/rancher/rke2/server/manifests/;
-  echo -e "#disable: rke2-ingress-nginx\n#profile: cis-1.6\nselinux: false" > /etc/rancher/rke2/config.yaml; 
+  mkdir -p /etc/rancher/rke2/ /var/lib/rancher/rke2/server/manifests/
+  echo -e "#disable: rke2-ingress-nginx\n#profile: cis-1.6\nselinux: false" > /etc/rancher/rke2/config.yaml
 
-  INSTALL_RKE2_ARTIFACT_PATH=/root/rancher/rke2$RKE_VERSION sh /root/output/rke2$RKE_VERSION/install.sh 
+  INSTALL_RKE2_ARTIFACT_PATH=/opt/rancher/rke2_$RKE_VERSION sh /opt/rancher/rke2_$RKE_VERSION/install.sh 
   systemctl enable rke2-server.service && systemctl start rke2-server.service
 
   # get node token
-  rsync -avP /var/lib/rancher/rke2/server/node-token 
+  rsync -avP /var/lib/rancher/rke2/server/token /opt/rancher/node-token
 
   # wait and add link
   export KUBECONFIG=/etc/rancher/rke2/rke2.yaml 
   ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
 
   echo - Setup nerdctl
-  tar -zxvf rancher/nerdctl/nerdctl-0.18.0-linux-amd64.tar.gz -C rancher/nerdctl 
-  mv rancher/nerdctl/nerdctl /usr/local/bin
+  tar -zxvf /opt/rancher/nerdctl/nerdctl-0.18.0-linux-amd64.tar.gz -C /opt/rancher/nerdctl 
+  mv /opt/rancher/nerdctl/nerdctl /usr/local/bin
   ln -s /run/k3s/containerd/containerd.sock /run/containerd/containerd.sock
 
   echo - Setup nfs
-  # share out output directory
+  # share out opt directory
+  echo "/opt/rancher  0.0.0.0/24(ro)" > /etc/exports
+  systemctl enable nfs-server.service && systemctl start nfs-server.service
 
   echo - run local registry
+  # Adam made me use localhost:5000
+  mkdir /opt/rancher/registry
+  nerdctl load -i /opt/rancher/images/rancher/registry_2.tar 
+  nerdctl run -d -v /opt/rancher/registry:/var/lib/registry -p 5000:5000 --restart always --name registry registry:2
 
   echo - load images
+  for file in $(ls /opt/rancher/images/longhorn/ | grep -v txt ); do 
+    skopeo copy docker-archive:/opt/rancher/images/longhorn/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
+  done
 
-# Adam made me use localhost:5000
+  for file in $(ls /opt/rancher/images/cert/ | grep -v txt ); do 
+    skopeo copy docker-archive:/opt/rancher/images/cert/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
+  done
+
+  for file in $(ls /opt/rancher/images/rancher/ | grep -v txt ); do 
+    skopeo copy docker-archive:/opt/rancher/images/rancher/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
+  done
+
+  # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
+  
 }
 
 ############################# usage ################################
