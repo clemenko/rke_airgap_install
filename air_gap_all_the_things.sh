@@ -15,7 +15,7 @@ NORMAL=$(tput sgr0)
 BLUE=$(tput setaf 4)
 
 #better error checking
-command -v skopeo >/dev/null 2>&1 || { echo "$RED" " ** skopeo was not found. Please install. ** " "$NORMAL" >&2; exit 1; }
+#command -v skopeo >/dev/null 2>&1 || { echo "$RED" " ** skopeo was not found. Please install. ** " "$NORMAL" >&2; exit 1; }
 
 ################################# build ################################
 function build () {
@@ -30,6 +30,8 @@ function build () {
   curl -#OL https://github.com/rancher/rke2/releases/download/$RKE_VERSION%2Brke2r2/rke2-images.linux-amd64.tar.zst
   curl -#OL https://github.com/rancher/rke2/releases/download/$RKE_VERSION%2Brke2r2/rke2.linux-amd64.tar.gz
   curl -#OL https://github.com/rancher/rke2/releases/download/$RKE_VERSION%2Brke2r2/sha256sum-amd64.txt
+  curl -#OL https://rpm.rancher.io/rke2/latest/common/centos/8/noarch/rke2-selinux-0.9-1.el8.noarch.rpm
+  curl -#OL https://rpm.rancher.io/rke2/latest/1.24/centos/8/x86_64/rke2-common-1.24.3~rke2r1-0.el8.x86_64.rpm
 
   echo - get the install script
   curl -sfL https://get.rke2.io -o install.sh
