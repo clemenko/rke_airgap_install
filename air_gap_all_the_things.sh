@@ -2,10 +2,10 @@
 
 set -ebpf
 
-export RKE_VERSION=v1.23.4
+export RKE_VERSION=v1.24.6
 export CERT_VERSION=v1.8.0
-export RANCHER_VERSION=v2.6.5
-export LONGHORN_VERSION=v1.2.4
+export RANCHER_VERSION=v2.6.8
+export LONGHORN_VERSION=v1.3.1
 
 
 ######  NO MOAR EDITS #######
