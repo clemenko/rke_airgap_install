@@ -144,6 +144,8 @@ function deploy () {
   export KUBECONFIG=/etc/rancher/rke2/rke2.yaml 
   ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
 
+  # /var/lib/rancher/rke2/agent/images/
+
   echo - Setup nerdctl
   tar -zxvf /opt/rancher/nerdctl/nerdctl-1.0.0-linux-amd64.tar.gz -C /opt/rancher/nerdctl 
   mv /opt/rancher/nerdctl/nerdctl /usr/local/bin
