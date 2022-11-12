@@ -115,9 +115,10 @@ function build () {
 
   echo "------------------------------------------------------------------"
   echo " to uncompress : "
+  echo "   yum install -y zstd"
   echo "   tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher"
   echo "------------------------------------------------------------------"
-  
+
 }
 
 ################################# deploy ################################
