@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh
+
 set -ebpf
 
 export RKE_VERSION=1.24.7
@@ -20,7 +22,7 @@ BLUE=$(tput setaf 4)
 function build () {
 
   echo - Installing packages
-  yum install zstd skopeo -y
+  yum install zstd skopeo -y > /dev/null 2>&1
 
   mkdir -p /opt/rancher/rke2_$RKE_VERSION/
   cd /opt/rancher/rke2_$RKE_VERSION/
@@ -118,9 +120,10 @@ function build () {
 function deploy () {
   # this is for the first node
   echo Untar the bits
-  mkdir /opt/rancher
+  #mkdir /opt/rancher
+  #tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
+
   yum install zstd nfs-utils iptables skopeo -y
-  tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
 
   echo Install rke2
   useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
@@ -134,7 +137,7 @@ function deploy () {
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml; 
 
   INSTALL_RKE2_ARTIFACT_PATH=/opt/rancher/rke2_$RKE_VERSION sh /opt/rancher/rke2_$RKE_VERSION/install.sh 
-  yum install -y /opt/rke2_1.24.7/rke2*.rpm
+  yum install -y /opt/rancher/rke2_$RKE_VERSION/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm /opt/rancher/rke2_$RKE_VERSION/rke2-selinux-0.9-1.el8.noarch.rpm
   systemctl enable rke2-server.service && systemctl start rke2-server.service
 
   # get node token
