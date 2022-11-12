@@ -2,6 +2,7 @@
 
 # mkdir /opt/rancher && cd /opt/rancher
 # curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh
+# chmod 755 air_gap_all_the_things.sh 
 
 set -ebpf
 
@@ -60,7 +61,7 @@ function build () {
   echo - Get Images - Rancher/Longhorn
 
   echo - create image dir
-  mkdir -p /opt/rancher/images/{cert,rancher,longhorn}
+  mkdir -p /opt/rancher/images/{cert,rancher,longhorn,registry}
   cd /opt/rancher/images/
 
   echo - rancher image list 
@@ -102,20 +103,15 @@ function build () {
     skopeo copy docker://$i docker-archive:rancher/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}') > /dev/null 2>&1
   done
 
-  mv rancher/busybox.tar rancher/busybox_latest.tar
+  skopeo copy docker://registry:2 docker-archive:registry/registry_2.tar
 
-  echo - Get Nerdctl
-  mkdir -p /opt/rancher/nerdctl/
-  cd /opt/rancher/nerdctl/
-  curl -#LO https://github.com/containerd/nerdctl/releases/download/v1.0.0/nerdctl-1.0.0-linux-amd64.tar.gz
+  # mv rancher/busybox.tar rancher/busybox_latest.tar
 
   cd /opt/rancher/
   echo - compress all the things
   tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst $(ls) > /dev/null 2>&1
 
-
-  # look at adding encryption - https://medium.com/@lumjjb/encrypting-container-images-with-skopeo-f733afb1aed4
-  
+  # look at adding encryption - https://medium.com/@lumjjb/encrypting-container-images-with-skopeo-f733afb1aed4  
 }
 
 ################################# deploy ################################
@@ -194,6 +190,8 @@ sysctl -p > /dev/null 2>&1
   # set up ssl passthrough for nginx
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml; 
 
+  rsync -avP /opt/rancher/images/registry/registry_2.tar /var/lib/rancher/rke2/agent/images/
+
   INSTALL_RKE2_ARTIFACT_PATH=/opt/rancher/rke2_$RKE_VERSION sh /opt/rancher/rke2_$RKE_VERSION/install.sh 
   yum install -y /opt/rancher/rke2_$RKE_VERSION/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm /opt/rancher/rke2_$RKE_VERSION/rke2-selinux-0.9-1.el8.noarch.rpm
   systemctl enable rke2-server.service && systemctl start rke2-server.service
@@ -201,18 +199,11 @@ sysctl -p > /dev/null 2>&1
   # get node token
   # rsync -avP /var/lib/rancher/rke2/server/token /opt/rancher/node-token
   
-  sleep 10
+  sleep 30
 
   # wait and add link
   export KUBECONFIG=/etc/rancher/rke2/rke2.yaml 
   ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
-
-  # /var/lib/rancher/rke2/agent/images/
-
-  #echo - Setup nerdctl
-  #tar -zxvf /opt/rancher/nerdctl/nerdctl-1.0.0-linux-amd64.tar.gz -C /opt/rancher/nerdctl 
-  #mv /opt/rancher/nerdctl/nerdctl /usr/local/bin
-  #ln -s /run/k3s/containerd/containerd.sock /run/containerd/containerd.sock
 
   echo - Setup nfs
   # share out opt directory
