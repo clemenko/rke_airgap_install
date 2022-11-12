@@ -103,7 +103,7 @@ function build () {
     skopeo copy docker://$i docker-archive:rancher/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}') > /dev/null 2>&1
   done
 
-  skopeo copy docker://registry:2 docker-archive:registry/registry_2.tar
+  skopeo copy docker://registry:2 docker-archive:registry/registry_2.tar > /dev/null 2>&1
 
   # mv rancher/busybox.tar rancher/busybox_latest.tar
 
@@ -190,6 +190,7 @@ sysctl -p > /dev/null 2>&1
   # set up ssl passthrough for nginx
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml; 
 
+  mkdir -p /var/lib/rancher/rke2/agent/images
   rsync -avP /opt/rancher/images/registry/registry_2.tar /var/lib/rancher/rke2/agent/images/
 
   INSTALL_RKE2_ARTIFACT_PATH=/opt/rancher/rke2_$RKE_VERSION sh /opt/rancher/rke2_$RKE_VERSION/install.sh 
@@ -213,6 +214,7 @@ sysctl -p > /dev/null 2>&1
   echo - run local registry
   # Adam made me use localhost:5000
   mkdir /opt/rancher/registry
+  chcon system_u:object_r:container_file_t:s0 /opt/rancher/registry
 
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -240,6 +242,13 @@ spec:
           capabilities:
             add:
             - NET_BIND_SERVICE
+        volumeMounts:
+        - name: registry
+          mountPath: /var/lib/registry
+      volumes:
+      - name: registry
+        hostPath:
+          path: /opt/rancher/registry
       hostNetwork: true
 EOF
 
@@ -260,7 +269,8 @@ EOF
   done
 
   # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
-  
+  # deploy longhorn : https://longhorn.io/docs/1.3.2/advanced-resources/deploy/airgap/#using-a-helm-chart
+
 }
 
 ############################# usage ################################
