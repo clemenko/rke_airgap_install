@@ -112,6 +112,12 @@ function build () {
   tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst $(ls) > /dev/null 2>&1
 
   # look at adding encryption - https://medium.com/@lumjjb/encrypting-container-images-with-skopeo-f733afb1aed4  
+
+  echo "------------------------------------------------------------------"
+  echo " to uncompress : "
+  echo "   tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher"
+  echo "------------------------------------------------------------------"
+  
 }
 
 ################################# deploy ################################
@@ -203,7 +209,7 @@ sysctl -p > /dev/null 2>&1
   sleep 30
 
   # wait and add link
-  export KUBECONFIG=/etc/rancher/rke2/rke2.yaml 
+  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
   ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
 
   echo - Setup nfs
@@ -251,9 +257,6 @@ spec:
           path: /opt/rancher/registry
       hostNetwork: true
 EOF
-
-#  nerdctl load -i /opt/rancher/images/rancher/registry_2.tar 
-#  nerdctl run -d -v /opt/rancher/registry:/var/lib/registry -p 5000:5000 --restart always --name registry registry:2
 
   echo - load images
   for file in $(ls /opt/rancher/images/longhorn/ | grep -v txt ); do 
