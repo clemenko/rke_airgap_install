@@ -6,7 +6,7 @@ set -ebpf
 
 export RKE_VERSION=1.24.7
 export CERT_VERSION=v1.10.0
-export RANCHER_VERSION=v2.6.8
+export RANCHER_VERSION=v2.6.9
 export LONGHORN_VERSION=v1.3.1
 
 ######  NO MOAR EDITS #######
