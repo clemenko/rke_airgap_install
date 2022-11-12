@@ -199,6 +199,8 @@ sysctl -p > /dev/null 2>&1
 
   # get node token
   # rsync -avP /var/lib/rancher/rke2/server/token /opt/rancher/node-token
+  
+  sleep 10
 
   # wait and add link
   export KUBECONFIG=/etc/rancher/rke2/rke2.yaml 
