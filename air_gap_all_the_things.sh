@@ -123,7 +123,7 @@ function deploy () {
   #mkdir /opt/rancher
   #tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
 
-  yum install zstd nfs-utils iptables skopeo -y
+  yum install -y zstd nfs-utils iptables skopeo container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils
 
   echo Install rke2
   useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
@@ -149,10 +149,10 @@ function deploy () {
 
   # /var/lib/rancher/rke2/agent/images/
 
-  echo - Setup nerdctl
-  tar -zxvf /opt/rancher/nerdctl/nerdctl-1.0.0-linux-amd64.tar.gz -C /opt/rancher/nerdctl 
-  mv /opt/rancher/nerdctl/nerdctl /usr/local/bin
-  ln -s /run/k3s/containerd/containerd.sock /run/containerd/containerd.sock
+  #echo - Setup nerdctl
+  #tar -zxvf /opt/rancher/nerdctl/nerdctl-1.0.0-linux-amd64.tar.gz -C /opt/rancher/nerdctl 
+  #mv /opt/rancher/nerdctl/nerdctl /usr/local/bin
+  #ln -s /run/k3s/containerd/containerd.sock /run/containerd/containerd.sock
 
   echo - Setup nfs
   # share out opt directory
