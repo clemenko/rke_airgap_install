@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# mkdir /opt/rancher && cd /opt/rancher
 # curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh
 
 set -ebpf
