@@ -248,7 +248,7 @@ spec:
           capabilities:
             add:
             - NET_BIND_SERVICE
-    hostNetwork: true
+      hostNetwork: true
 EOF
 
 #  nerdctl load -i /opt/rancher/images/rancher/registry_2.tar 
