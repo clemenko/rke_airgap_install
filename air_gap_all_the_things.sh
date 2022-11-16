@@ -1,15 +1,13 @@
 #!/bin/bash
 
-# mkdir /opt/rancher && cd /opt/rancher
-# curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh
-# chmod 755 air_gap_all_the_things.sh 
+# yum install -y vim && mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh && chmod 755 air_gap_all_the_things.sh 
 
 set -ebpf
 
 export RKE_VERSION=1.24.7
 export CERT_VERSION=v1.10.0
 export RANCHER_VERSION=v2.6.9
-export LONGHORN_VERSION=v1.3.1
+export LONGHORN_VERSION=v1.3.2
 
 ######  NO MOAR EDITS #######
 export RED='\x1b[0;31m'
@@ -210,7 +208,7 @@ sysctl -p > /dev/null 2>&1
   sleep 30
 
   # wait and add link
-  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
+  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc && source ~/.bashrc
   ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
 
   echo - Setup nfs
@@ -261,7 +259,7 @@ EOF
 
   echo - load images
   for file in $(ls /opt/rancher/images/longhorn/ | grep -v txt ); do 
-    skopeo copy docker-archive:/opt/rancher/images/longhorn/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
+    skopeo copy docker-archive:/opt/rancher/images/longhorn/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/longhornio/"$1":"$2}') --dest-tls-verify=false
   done
 
   for file in $(ls /opt/rancher/images/cert/ | grep -v txt ); do 
