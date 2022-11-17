@@ -6,7 +6,7 @@ set -ebpf
 
 export RKE_VERSION=1.24.7
 export CERT_VERSION=v1.10.0
-export RANCHER_VERSION=v2.7.0
+export RANCHER_VERSION=v2.6.9
 export LONGHORN_VERSION=v1.3.2
 
 ######  NO MOAR EDITS #######
@@ -53,7 +53,7 @@ function build () {
 
   echo - get charts
   helm pull jetstack/cert-manager --version $CERT_VERSION > /dev/null 2>&1
-  helm pull rancher-latest/rancher > /dev/null 2>&1
+  helm pull rancher-latest/rancher --version $RANCHER_VERSION > /dev/null 2>&1
   helm pull longhorn/longhorn > /dev/null 2>&1
 
   echo - Get Images - Rancher/Longhorn
@@ -272,6 +272,9 @@ EOF
   for file in $(ls /opt/rancher/images/rancher/ | grep -v txt ); do 
     skopeo copy docker-archive:/opt/rancher/images/rancher/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/rancher/"$1":"$2}') --dest-tls-verify=false
   done
+
+
+  chmod 600 /etc/rancher/rke2/rke2.yaml
 
   # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
   # deploy longhorn : https://longhorn.io/docs/1.3.2/advanced-resources/deploy/airgap/#using-a-helm-chart
