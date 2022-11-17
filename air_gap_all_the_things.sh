@@ -123,15 +123,13 @@ function build () {
 
 }
 
-################################# deploy ################################
-function deploy () {
-  # this is for the first node
-  echo Untar the bits
-  #mkdir /opt/rancher
-  #tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
 
-echo " updating kernel settings"
-cat << EOF >> /etc/sysctl.conf
+################################# base ################################
+function base () {
+  # install all the base bits.
+
+  echo " updating kernel settings"
+  cat << EOF >> /etc/sysctl.conf
 # SWAP settings
 vm.swappiness=0
 vm.panic_on_oom=0
@@ -187,6 +185,16 @@ sysctl -p > /dev/null 2>&1
   yum install -y zstd nfs-utils iptables skopeo container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils
   systemctl enable iscsid && systemctl start iscsid
   echo -e "[keyfile]\nunmanaged-devices=interface-name:cali*;interface-name:flannel*" > /etc/NetworkManager/conf.d/rke2-canal.conf
+}
+
+################################# deploy control ################################
+function deploy_control () {
+  # this is for the first node
+  echo Untar the bits
+  #mkdir /opt/rancher
+  #tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
+
+  base
 
   echo Install rke2
   cd /opt/rancher/rke2_$RKE_VERSION
@@ -290,6 +298,34 @@ EOF
   # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
   # deploy longhorn : https://longhorn.io/docs/1.3.2/advanced-resources/deploy/airgap/#using-a-helm-chart
 
+}
+
+################################# deploy agent################################
+function deploy_agent () {
+  echo - deploy agent
+
+  base
+
+  # get token
+
+  export token=K........
+  export server=
+
+  mkdir -p /etc/rancher/rke2/
+  echo -e "server: https://$server:9345\ntoken: $token\nwrite-kubeconfig-mode: 0640\n#profile: cis-1.6\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
+
+  chmod 600 /etc/rancher/rke2/config.yaml
+
+  cd /opt/rancher
+  INSTALL_RKE2_ARTIFACT_PATH=/opt/rancher/rke2_$RKE_VERSION INSTALL_RKE2_TYPE=agent sh /opt/rancher/rke2_$RKE_VERSION/install.sh 
+  yum install -y /opt/rancher/rke2_$RKE_VERSION/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm /opt/rancher/rke2_$RKE_VERSION/rke2-selinux-0.9-1.el8.noarch.rpm
+  systemctl enable rke2-agent.service && systemctl start rke2-agent.service
+
+# Or online
+curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL=v1.24.7 INSTALL_RKE2_TYPE=agent sh -
+
+# start all the things
+systemctl enable rke2-agent.service && systemctl start rke2-agent.service
 }
 
 ############################# usage ################################
