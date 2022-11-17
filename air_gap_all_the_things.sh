@@ -54,7 +54,7 @@ function build () {
   echo - get charts
   helm pull jetstack/cert-manager --version $CERT_VERSION > /dev/null 2>&1
   helm pull rancher-latest/rancher --version $RANCHER_VERSION > /dev/null 2>&1
-  helm pull longhorn/longhorn > /dev/null 2>&1
+  helm pull longhorn/longhorn --version $LONGHORN_VERSION > /dev/null 2>&1
 
   echo - Get Images - Rancher/Longhorn
 
