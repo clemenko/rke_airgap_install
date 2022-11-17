@@ -42,6 +42,10 @@ function build () {
   mkdir -p /opt/rancher/helm/
   cd /opt/rancher/helm/
 
+  curl -#LO https://get.helm.sh/helm-v3.10.2-linux-386.tar.gz > /dev/null 2>&1
+  tar -zxvf helm-v3.10.2-linux-386.tar.gz > /dev/null 2>&1
+  rsync -avP linux-386/helm /usr/local/bin/ > /dev/null 2>&1
+
   echo - get helm
   curl -#L https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1
 
@@ -276,8 +280,12 @@ EOF
     skopeo copy docker-archive:/opt/rancher/images/rancher/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/rancher/"$1":"$2}') --dest-tls-verify=false
   done
 
-
   chmod 600 /etc/rancher/rke2/rke2.yaml
+
+  echo - unpack helm
+  cd /opt/rancher/helm
+  tar -zxvf helm-v3.10.2-linux-386.tar.gz > /dev/null 2>&1
+  rsync -avP linux-386/helm /usr/local/bin/ > /dev/null 2>&1
 
   # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
   # deploy longhorn : https://longhorn.io/docs/1.3.2/advanced-resources/deploy/airgap/#using-a-helm-chart
