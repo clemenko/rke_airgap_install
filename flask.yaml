@@ -14,11 +14,6 @@ metadata:
     app: flask
 spec:
   replicas: 4
-  strategy:
-    rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
-    type: RollingUpdate
   selector:
     matchLabels:
       app: flask
@@ -31,10 +26,9 @@ spec:
       - name: flask
         securityContext:
           allowPrivilegeEscalation: false
-        image: clemenko/flask_demo
+        image: localhost:5000/flask/flask_demo
         ports:
         - containerPort: 5000
-        imagePullPolicy: IfNotPresent
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -55,7 +49,7 @@ spec:
     spec:
       containers:
       - name: mongo
-        image: mongo
+        image: localhost:5000/flask/mongo
         securityContext:
           allowPrivilegeEscalation: false
         ports:
@@ -80,7 +74,7 @@ spec:
     spec:
       containers:
       - name: redis
-        image: redis
+        image: localhost:5000/flask/redis
         securityContext:
           allowPrivilegeEscalation: false
         ports:

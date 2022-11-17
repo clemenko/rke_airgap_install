@@ -63,7 +63,7 @@ function build () {
   echo - Get Images - Rancher/Longhorn
 
   echo - create image dir
-  mkdir -p /opt/rancher/images/{cert,rancher,longhorn,registry}
+  mkdir -p /opt/rancher/images/{cert,rancher,longhorn,registry,flask}
   cd /opt/rancher/images/
 
   echo - rancher image list 
@@ -107,13 +107,11 @@ function build () {
 
   skopeo copy docker://registry:2 docker-archive:registry/registry_2.tar > /dev/null 2>&1
 
-  # mv rancher/busybox.tar rancher/busybox_latest.tar
-
   # add flask app and yaml.
-  skopeo copy docker://redis redis.tar
-  skopeo copy docker://mongo mongo.tar
-  skopeo copy docker://clemenko/flask_demo flask_demo.tar 
-  
+  skopeo copy docker://redis docker-archive:flask/redis.tar > /dev/null 2>&1
+  skopeo copy docker://mongo docker-archive:flask/mongo.tar > /dev/null 2>&1
+  skopeo copy docker://clemenko/flask_demo docker-archive:flask/flask_demo.tar > /dev/null 2>&1
+  curl -#L https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/flask.yaml -o /opt/rancher/images/flask/flask.yaml > /dev/null 2>&1
 
   cd /opt/rancher/
   echo - compress all the things
@@ -221,9 +219,6 @@ function deploy_control () {
   yum install -y /opt/rancher/rke2_$RKE_VERSION/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm /opt/rancher/rke2_$RKE_VERSION/rke2-selinux-0.9-1.el8.noarch.rpm
   systemctl enable rke2-server.service && systemctl start rke2-server.service
 
-  # get node token
-  # rsync -avP /var/lib/rancher/rke2/server/token /opt/rancher/node-token
-  
   sleep 30
 
   # wait and add link
@@ -304,6 +299,12 @@ EOF
   # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
   # deploy longhorn : https://longhorn.io/docs/1.3.2/advanced-resources/deploy/airgap/#using-a-helm-chart
 
+  echo "------------------------------------------------------------------"
+  echo " join token: "
+  echo "   "$(cat /var/lib/rancher/rke2/server/token)
+  echo "   we will need that token for the agents."
+  echo "------------------------------------------------------------------"
+
 }
 
 ################################# deploy agent################################
@@ -314,7 +315,14 @@ function deploy_agent () {
 
   # get token
 
-  export token=K........
+  echo "------------------------------------------------------------------"
+  echo " Got the join token from the server? "
+  echo "   we need the join token and the ip address of the server"
+  echo "   edit this file on like 325 to add it to the script."
+  echo "------------------------------------------------------------------"
+
+
+  export token=STOP
   export server=
 
   mkdir -p /etc/rancher/rke2/
@@ -334,6 +342,24 @@ curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL=v1.24.7 INSTALL_RKE2_TYPE=a
 systemctl enable rke2-agent.service && systemctl start rke2-agent.service
 }
 
+
+################################# deploy agent################################
+function flask () {
+  
+  echo - load images
+  for file in $(ls /opt/rancher/images/flask/ | grep -v yaml ); do 
+    echo skopeo copy docker-archive:/opt/rancher/images/flask/$file docker://$(echo $file | sed 's/.tar//g' | awk '{print "localhost:5000/flask/"$1}') --dest-tls-verify=false
+  done
+
+  echo "------------------------------------------------------------------"
+  echo " to deploy: "
+  echo "   edit /opt/rancher/images/flask/flask.yaml to point the images to the correct adddres for the registry."
+  echo "   kubectl apply -f /opt/rancher/images/flask/flask.yaml"
+  echo "------------------------------------------------------------------"
+
+}
+
+
 ############################# usage ################################
 function usage () {
   echo ""
@@ -342,8 +368,9 @@ function usage () {
   echo " Usage: $0 {build | deploy}"
   echo ""
   echo " ./k3s.sh build # download and create the monster TAR "
-  echo " ./k3s.sh control # unpack and deploy"
-  echo " ./k3s.sh agent # unpack and deploy"
+  echo " ./k3s.sh control # deploy on a control plane server"
+  echo " ./k3s.sh agent # deploy on a agent"
+  echo " ./k3s.sh flask # depoy a 3 tier app"
   echo ""
   echo "-------------------------------------------------"
   echo ""
@@ -354,6 +381,7 @@ case "$1" in
         build ) build;;
         control) deploy_control;;
         agent) deploy_agent;;
+        flask) flask;;
         *) usage;;
 esac
 
