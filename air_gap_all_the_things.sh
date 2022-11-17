@@ -6,7 +6,7 @@ set -ebpf
 
 export RKE_VERSION=1.24.7
 export CERT_VERSION=v1.10.0
-export RANCHER_VERSION=v2.6.9
+export RANCHER_VERSION=v2.7.0
 export LONGHORN_VERSION=v1.3.2
 
 ######  NO MOAR EDITS #######
@@ -180,7 +180,8 @@ EOF
 sysctl -p > /dev/null 2>&1
 
   echo install packages
-  yum install -y zstd nfs-utils iptables skopeo container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils
+  yum install -y zstd nfs-utils iptables skopeo container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils
+  systemctl enable iscsid && systemctl start iscsid
   echo -e "[keyfile]\nunmanaged-devices=interface-name:cali*;interface-name:flannel*" > /etc/NetworkManager/conf.d/rke2-canal.conf
 
   echo Install rke2
@@ -205,7 +206,7 @@ sysctl -p > /dev/null 2>&1
   # get node token
   # rsync -avP /var/lib/rancher/rke2/server/token /opt/rancher/node-token
   
-  sleep 30
+  sleep 120
 
   # wait and add link
   echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc && source ~/.bashrc
@@ -257,6 +258,8 @@ spec:
       hostNetwork: true
 EOF
 
+  sleep 15 
+  
   echo - load images
   for file in $(ls /opt/rancher/images/longhorn/ | grep -v txt ); do 
     skopeo copy docker-archive:/opt/rancher/images/longhorn/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/longhornio/"$1":"$2}') --dest-tls-verify=false
@@ -267,7 +270,7 @@ EOF
   done
 
   for file in $(ls /opt/rancher/images/rancher/ | grep -v txt ); do 
-    skopeo copy docker-archive:/opt/rancher/images/rancher/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
+    skopeo copy docker-archive:/opt/rancher/images/rancher/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/rancher/"$1":"$2}') --dest-tls-verify=false
   done
 
   # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
