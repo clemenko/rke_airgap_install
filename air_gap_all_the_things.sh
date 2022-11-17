@@ -6,7 +6,7 @@ set -ebpf
 
 export RKE_VERSION=1.24.7
 export CERT_VERSION=v1.10.0
-export RANCHER_VERSION=v2.6.9
+export RANCHER_VERSION=v2.7.0
 export LONGHORN_VERSION=v1.3.2
 
 ######  NO MOAR EDITS #######
@@ -206,11 +206,10 @@ sysctl -p > /dev/null 2>&1
   # get node token
   # rsync -avP /var/lib/rancher/rke2/server/token /opt/rancher/node-token
   
-  sleep 120
+  sleep 30
 
   # wait and add link
   echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc && source ~/.bashrc
-  ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
 
   echo - Setup nfs
   # share out opt directory
@@ -221,6 +220,8 @@ sysctl -p > /dev/null 2>&1
   # Adam made me use localhost:5000
   mkdir /opt/rancher/registry
   chcon system_u:object_r:container_file_t:s0 /opt/rancher/registry
+
+  ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
 
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -264,6 +265,8 @@ EOF
   for file in $(ls /opt/rancher/images/longhorn/ | grep -v txt ); do 
     skopeo copy docker-archive:/opt/rancher/images/longhorn/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/longhornio/"$1":"$2}') --dest-tls-verify=false
   done
+  #longhoen issue
+  skopeo copy docker-archive:/opt/rancher/images/longhorn/longhorn-instance-manager_v1_20221003.tar docker://localhost:5000/longhornio/longhorn-instance-manager:v1_20221003 --dest-tls-verify=false
 
   for file in $(ls /opt/rancher/images/cert/ | grep -v txt ); do 
     skopeo copy docker-archive:/opt/rancher/images/cert/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
