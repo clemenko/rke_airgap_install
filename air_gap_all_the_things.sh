@@ -109,6 +109,8 @@ function build () {
 
   # mv rancher/busybox.tar rancher/busybox_latest.tar
 
+  # add flask app and yaml.
+
   cd /opt/rancher/
   echo - compress all the things
   tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst $(ls) > /dev/null 2>&1
@@ -336,7 +338,8 @@ function usage () {
   echo " Usage: $0 {build | deploy}"
   echo ""
   echo " ./k3s.sh build # download and create the monster TAR "
-  echo " ./k3s.sh deploy # unpack and deploy"
+  echo " ./k3s.sh control # unpack and deploy"
+  echo " ./k3s.sh agent # unpack and deploy"
   echo ""
   echo "-------------------------------------------------"
   echo ""
@@ -345,7 +348,8 @@ function usage () {
 
 case "$1" in
         build ) build;;
-        deploy) deploy;;
+        control) deploy_control;;
+        agent) deploy_agent;;
         *) usage;;
 esac
 
