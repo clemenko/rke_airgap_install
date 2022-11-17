@@ -110,6 +110,10 @@ function build () {
   # mv rancher/busybox.tar rancher/busybox_latest.tar
 
   # add flask app and yaml.
+  skopeo copy docker://redis redis.tar
+  skopeo copy docker://mongo mongo.tar
+  skopeo copy docker://clemenko/flask_demo flask_demo.tar 
+  
 
   cd /opt/rancher/
   echo - compress all the things
@@ -235,7 +239,7 @@ function deploy_control () {
   mkdir /opt/rancher/registry
   chcon system_u:object_r:container_file_t:s0 /opt/rancher/registry
 
-  ln -s /var/lib/rancher/rke2/data/v1*/bin/kubectl  /usr/local/bin/kubectl 
+  ln -s /var/lib/rancher/rke2/data/v1.24.7-rke2r1-bd84af53feb9/bin/kubectl  /usr/local/bin/kubectl 
 
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
