@@ -105,7 +105,7 @@ function build () {
     skopeo copy docker://$i docker-archive:rancher/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}') > /dev/null 2>&1
   done
 
-  skopeo copy docker://registry:2 docker-archive:registry/registry_2.tar > /dev/null 2>&1
+  curl -#L https://github.com/clemenko/rke_airgap_install/raw/main/registry.tar -o registry/registry_2.tar > /dev/null 2>&1
 
   # add flask app and yaml.
   skopeo copy docker://redis docker-archive:flask/redis.tar > /dev/null 2>&1
