@@ -272,7 +272,7 @@ spec:
       hostNetwork: true
 EOF
 
-  sleep 15 
+  sleep 30
   
   echo - load images
   for file in $(ls /opt/rancher/images/longhorn/ | grep -v txt ); do 
@@ -304,7 +304,7 @@ EOF
   echo "------------------------------------------------------------------"
   echo " Next:"
   echo "  - Mkdir: \"mkdir /opt/rancher\""
-  echo "  - Mount: \"mount 24.199.81.192:/opt/rancher /opt/rancher\""
+  echo "  - Mount: \"mount 142.93.192.135:/opt/rancher /opt/rancher\""
   echo "  - Run: \""$1" agent\" on your worker nodes"
   echo "------------------------------------------------------------------"
 
@@ -332,20 +332,35 @@ function deploy_worker () {
 }
 
 
-################################# deploy agent################################
+################################# flask ################################
 function flask () {
   
   echo - load images
   for file in $(ls /opt/rancher/images/flask/ | grep -v yaml ); do 
-    echo skopeo copy docker-archive:/opt/rancher/images/flask/$file docker://$(echo $file | sed 's/.tar//g' | awk '{print "localhost:5000/flask/"$1}') --dest-tls-verify=false
+     skopeo copy docker-archive:/opt/rancher/images/flask/$file docker://$(echo $file | sed 's/.tar//g' | awk '{print "localhost:5000/flask/"$1}') --dest-tls-verify=false
   done
 
   echo "------------------------------------------------------------------"
   echo " to deploy: "
-  echo "   edit /opt/rancher/images/flask/flask.yaml to point the images to the correct adddres for the registry."
+  echo "   edit /opt/rancher/images/flask/flask.yaml to the ingress URL."
   echo "   kubectl apply -f /opt/rancher/images/flask/flask.yaml"
   echo "------------------------------------------------------------------"
 
+}
+
+################################# longhorn ################################
+function longhorn () {
+  echo - deploying longhorn
+
+  helm upgrade -i longhorn /opt/rancher/helm/longhorn-1.3.2.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true --set ingress.host=longhorn.awesome.sauce --set global.cattle.systemDefaultRegistry=localhost:5000
+}
+
+################################# rancher ################################
+function rancher () {
+  echo - deploying rancher
+  helm update -i cert-manager /opt/rancher/helm/cert-manager-v1.10.0.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert-manager-controller --set webhook.image.repository=localhost:5000/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert-manager-ctl
+
+  helm update -i rancher /opt/rancher/helm/rancher-2.7.0.tgz --namespace cattle-system --create-namespace --set hostname=rancher.awesome.sauce --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000
 }
 
 
@@ -359,7 +374,9 @@ function usage () {
   echo " ./k3s.sh build # download and create the monster TAR "
   echo " ./k3s.sh control # deploy on a control plane server"
   echo " ./k3s.sh worker # deploy on a worker"
-  echo " ./k3s.sh flask # depoy a 3 tier app"
+  echo " ./k3s.sh flask # deploy a 3 tier app"
+  echo " ./k3s.sh longhorn # deploy longhorn"
+  echo " ./k3s.sh rancher # deploy rancher"
   echo ""
   echo "-------------------------------------------------"
   echo ""
@@ -370,6 +387,8 @@ case "$1" in
         build ) build;;
         control) deploy_control;;
         worker) deploy_worker;;
+        longhorn) longhorn;;
+        rancher) rancher;;
         flask) flask;;
         *) usage;;
 esac
