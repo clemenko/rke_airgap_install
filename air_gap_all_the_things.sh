@@ -222,7 +222,8 @@ function deploy_control () {
   sleep 30
 
   # wait and add link
-  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
+  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml PATH=$PATH:/var/lib/rancher/rke2/bin" >> ~/.bashrc
+  ln -s /var/run/k3s/containerd/containerd.sock /var/run/containerd/containerd.sock
   source ~/.bashrc
 
   echo - Setup nfs
@@ -234,8 +235,6 @@ function deploy_control () {
   # Adam made me use localhost:5000
   mkdir /opt/rancher/registry
   chcon system_u:object_r:container_file_t:s0 /opt/rancher/registry
-
-  ln -s /var/lib/rancher/rke2/data/v1.24.7-rke2r1-bd84af53feb9/bin/kubectl  /usr/local/bin/kubectl 
 
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
