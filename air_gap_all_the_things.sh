@@ -222,11 +222,12 @@ function deploy_control () {
   sleep 30
 
   # wait and add link
-  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc && source ~/.bashrc
+  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
+  source ~/.bashrc
 
   echo - Setup nfs
   # share out opt directory
-  echo "/opt/rancher  0.0.0.0/24(ro)" > /etc/exports
+  echo "/opt/rancher *(ro)" > /etc/exports
   systemctl enable nfs-server.service && systemctl start nfs-server.service
 
   echo - run local registry
@@ -296,34 +297,28 @@ EOF
   tar -zxvf helm-v3.10.2-linux-386.tar.gz > /dev/null 2>&1
   rsync -avP linux-386/helm /usr/local/bin/ > /dev/null 2>&1
 
+  cat /var/lib/rancher/rke2/server/token > /opt/rancher/token
+
   # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
   # deploy longhorn : https://longhorn.io/docs/1.3.2/advanced-resources/deploy/airgap/#using-a-helm-chart
 
   echo "------------------------------------------------------------------"
-  echo " join token: "
-  echo "   "$(cat /var/lib/rancher/rke2/server/token)
-  echo "   we will need that token for the agents."
+  echo " Next:"
+  echo "  - Mkdir: \"mkdir /opt/rancher\""
+  echo "  - Mount: \"mount 24.199.81.192:/opt/rancher /opt/rancher\""
+  echo "  - Run: \""$1" agent\" on your worker nodes"
   echo "------------------------------------------------------------------"
 
 }
 
-################################# deploy agent################################
-function deploy_agent () {
-  echo - deploy agent
+################################# deploy worker ################################
+function deploy_worker () {
+  echo - deploy worker
 
   base
 
-  # get token
-
-  echo "------------------------------------------------------------------"
-  echo " Got the join token from the server? "
-  echo "   we need the join token and the ip address of the server"
-  echo "   edit this file on like 325 to add it to the script."
-  echo "------------------------------------------------------------------"
-
-
-  export token=STOP
-  export server=
+  export token=$(cat /opt/rancher/token)
+  export server=$(mount |grep rancher | awk -F: '{print $1}')
 
   mkdir -p /etc/rancher/rke2/
   echo -e "server: https://$server:9345\ntoken: $token\nwrite-kubeconfig-mode: 0640\n#profile: cis-1.6\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
@@ -335,11 +330,6 @@ function deploy_agent () {
   yum install -y /opt/rancher/rke2_$RKE_VERSION/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm /opt/rancher/rke2_$RKE_VERSION/rke2-selinux-0.9-1.el8.noarch.rpm
   systemctl enable rke2-agent.service && systemctl start rke2-agent.service
 
-# Or online
-curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL=v1.24.7 INSTALL_RKE2_TYPE=agent sh -
-
-# start all the things
-systemctl enable rke2-agent.service && systemctl start rke2-agent.service
 }
 
 
@@ -369,7 +359,7 @@ function usage () {
   echo ""
   echo " ./k3s.sh build # download and create the monster TAR "
   echo " ./k3s.sh control # deploy on a control plane server"
-  echo " ./k3s.sh agent # deploy on a agent"
+  echo " ./k3s.sh worker # deploy on a worker"
   echo " ./k3s.sh flask # depoy a 3 tier app"
   echo ""
   echo "-------------------------------------------------"
@@ -380,7 +370,7 @@ function usage () {
 case "$1" in
         build ) build;;
         control) deploy_control;;
-        agent) deploy_agent;;
+        worker) deploy_worker;;
         flask) flask;;
         *) usage;;
 esac
