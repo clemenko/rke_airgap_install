@@ -382,6 +382,30 @@ function usage () {
   exit 1
 }
 
+############################# howto ################################
+function howto () {
+  echo ""
+  echo "-------------------------------------------------"
+  echo ""
+  echo "Steps:"
+  echo " - UNCLASS - ./air_gap_all_the_things.sh build"
+  echo " - Move the ZST file across the air gap"
+  echo " - Build 3 vms with 4cpu and 8gb of ram"
+  echo " - On 1st node ( Control Plane node ) run: mkdir /opt/rancher && tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher"
+  echo " - On 1st node run cd /opt/rancher; ./air_gap_all_the_things.sh control"
+  echo " - Wait and watch for errors"
+  echo " - On 2nd, and 3rd nodes run mkdir /opt/rancher && mount $IP:/opt/rancher /opt/rancher"
+  echo " - On 2nd, and 3rd nodes run ./air_gap_all_the_things.sh worker"
+  echo " - On 1st node install"
+  echo "   - Longhorn : ./air_gap_all_the_things.sh longhorn"
+  echo "   - Rancher : ./air_gap_all_the_things.sh rancher"
+  echo "   - Flask : ./air_gap_all_the_things.sh flask"
+  echo ""
+  echo "-------------------------------------------------"
+  echo ""
+  exit 1
+}
+
 case "$1" in
         build ) build;;
         control) deploy_control;;
@@ -389,6 +413,7 @@ case "$1" in
         longhorn) longhorn;;
         rancher) rancher;;
         flask) flask;;
+        howto) howto;;
         *) usage;;
 esac
 
