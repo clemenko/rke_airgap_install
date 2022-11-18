@@ -394,7 +394,7 @@ function howto () {
   echo " - On 1st node ( Control Plane node ) run: mkdir /opt/rancher && tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher"
   echo " - On 1st node run cd /opt/rancher; ./air_gap_all_the_things.sh control"
   echo " - Wait and watch for errors"
-  echo " - On 2nd, and 3rd nodes run mkdir /opt/rancher && mount $IP:/opt/rancher /opt/rancher"
+  echo " - On 2nd, and 3rd nodes run mkdir /opt/rancher && mount \$IP:/opt/rancher /opt/rancher"
   echo " - On 2nd, and 3rd nodes run ./air_gap_all_the_things.sh worker"
   echo " - On 1st node install"
   echo "   - Longhorn : ./air_gap_all_the_things.sh longhorn"
