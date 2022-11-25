@@ -113,6 +113,11 @@ function build () {
   skopeo copy docker://clemenko/flask_demo docker-archive:flask/flask_demo.tar > /dev/null 2>&1
   curl -#L https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/flask.yaml -o /opt/rancher/images/flask/flask.yaml > /dev/null 2>&1
 
+  # docs
+  mkdir /opt/rancher/docs/
+  skopeo copy docker://clemenko/offline_docs docker-archive:/opt/rancher/docs/offline_docs.tar > /dev/null 2>&1
+  curl -#L https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/docs.yaml -o /opt/rancher/docs/docs.yaml 
+
   cd /opt/rancher/
   echo - compress all the things
   tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst $(ls) > /dev/null 2>&1
@@ -340,6 +345,22 @@ function flask () {
   
   echo - load images
   for file in $(ls /opt/rancher/images/flask/ | grep -v yaml ); do 
+     skopeo copy docker-archive:/opt/rancher/images/flask/$file docker://$(echo $file | sed 's/.tar//g' | awk '{print "localhost:5000/flask/"$1}') --dest-tls-verify=false
+  done
+
+  echo "------------------------------------------------------------------"
+  echo " to deploy: "
+  echo "   edit /opt/rancher/images/flask/flask.yaml to the ingress URL."
+  echo "   kubectl apply -f /opt/rancher/images/flask/flask.yaml"
+  echo "------------------------------------------------------------------"
+
+}
+
+################################# docs ################################
+function docs () {
+  
+  echo - load images
+  for file in $(ls /opt/rancher/docs/*.tar | grep -v yaml ); do 
      skopeo copy docker-archive:/opt/rancher/images/flask/$file docker://$(echo $file | sed 's/.tar//g' | awk '{print "localhost:5000/flask/"$1}') --dest-tls-verify=false
   done
 

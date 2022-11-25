@@ -1,0 +1,67 @@
+# clemenko
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: docs
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs
+  namespace: docs
+  labels:
+    app: docs
+spec:
+  selector:
+    matchLabels:
+      app: docs
+  template:
+    metadata:
+      labels:
+        app: docs
+    spec:
+      containers:
+      - name: docs
+        securityContext:
+          allowPrivilegeEscalation: false
+        image: localhost:5000/offline_docs
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: docs
+  name: docs
+  namespace: docs
+spec:
+  selector:
+    app: docs
+  type: NodePort
+  ports:
+  - name: docs
+    protocol: TCP
+    port: 8000
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: docs
+  namespace: docs
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: docs.rfed.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: docs
+            port:
+              number: 80
