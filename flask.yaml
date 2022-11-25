@@ -90,12 +90,9 @@ metadata:
 spec:
   selector:
     app: flask
-  type: NodePort
   ports:
-  - name: flask
-    protocol: TCP
+  - protocol: TCP
     port: 5000
-    targetPort: 5000
 ---
 apiVersion: v1
 kind: Service
@@ -108,8 +105,7 @@ spec:
   selector:
     app: redis
   ports:
-  - name: redis
-    protocol: TCP
+  - protocol: TCP
     port: 6379
 ---
 apiVersion: v1
@@ -123,8 +119,7 @@ spec:
   selector:
     app: mongo
   ports:
-  - name: mongo
-    protocol: TCP
+  - protocol: TCP
     port: 27017
 ---
 apiVersion: networking.k8s.io/v1
@@ -132,8 +127,6 @@ kind: Ingress
 metadata:
   name: flask
   namespace: flask
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
   - host: app.rfed.io

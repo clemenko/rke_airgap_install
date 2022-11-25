@@ -360,14 +360,12 @@ function flask () {
 function docs () {
   
   echo - load images
-  for file in $(ls /opt/rancher/docs/*.tar | grep -v yaml ); do 
-     skopeo copy docker-archive:/opt/rancher/images/flask/$file docker://$(echo $file | sed 's/.tar//g' | awk '{print "localhost:5000/flask/"$1}') --dest-tls-verify=false
-  done
+  skopeo copy docker-archive:/opt/rancher/docs/offline_docs.tar docker://localhost:5000/offline_docs --dest-tls-verify=false
 
   echo "------------------------------------------------------------------"
   echo " to deploy: "
-  echo "   edit /opt/rancher/images/flask/flask.yaml to the ingress URL."
-  echo "   kubectl apply -f /opt/rancher/images/flask/flask.yaml"
+  echo "   edit /opt/rancher/docs/docs.yaml to the ingress URL."
+  echo "   kubectl apply -f /opt/rancher/docs/docs.yaml"
   echo "------------------------------------------------------------------"
 
 }

@@ -39,20 +39,15 @@ metadata:
 spec:
   selector:
     app: docs
-  type: NodePort
   ports:
-  - name: docs
-    protocol: TCP
-    port: 8000
-    targetPort: 80
+  - protocol: TCP
+    port: 80
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: docs
   namespace: docs
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
   - host: docs.rfed.io
