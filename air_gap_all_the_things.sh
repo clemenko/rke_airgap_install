@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# yum install -y vim && mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh && chmod 755 air_gap_all_the_things.sh 
+# yum install -y vim && mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/$0 && chmod 755 $0 
 
 set -ebpf
 
@@ -309,8 +309,11 @@ EOF
   echo "------------------------------------------------------------------"
   echo " Next:"
   echo "  - Mkdir: \"mkdir /opt/rancher\""
-  echo "  - Mount: \"mount 142.93.192.135:/opt/rancher /opt/rancher\""
-  echo "  - Run: \""$1" agent\" on your worker nodes"
+  echo "  - Mount: \"mount $(hostname -I | awk '{ print $1 }'):/opt/rancher /opt/rancher\""
+  echo "  - CD: \"cd /opt/rancher\""
+  echo "  - Run: \""$0" worker\" on your worker nodes"
+  echo "------------------------------------------------------------------"
+  echo "  - yolo: \"mkdir /opt/rancher && mount $(hostname -I | awk '{ print $1 }'):/opt/rancher /opt/rancher && cd /opt/rancher && ./$0 worker\""
   echo "------------------------------------------------------------------"
 
 }
@@ -392,36 +395,30 @@ function usage () {
   echo ""
   echo " Usage: $0 {build | deploy}"
   echo ""
-  echo " ./k3s.sh build # download and create the monster TAR "
-  echo " ./k3s.sh control # deploy on a control plane server"
-  echo " ./k3s.sh worker # deploy on a worker"
-  echo " ./k3s.sh flask # deploy a 3 tier app"
-  echo " ./k3s.sh longhorn # deploy longhorn"
-  echo " ./k3s.sh rancher # deploy rancher"
-  echo ""
-  echo "-------------------------------------------------"
-  echo ""
-  exit 1
-}
-
-############################# howto ################################
-function howto () {
+  echo " ./$0 build # download and create the monster TAR "
+  echo " ./$0 control # deploy on a control plane server"
+  echo " ./$0 worker # deploy on a worker"
+  echo " ./$0 flask # deploy a 3 tier app"
+  echo " ./$0 longhorn # deploy longhorn"
+  echo " ./$0 rancher # deploy rancher"
+  echo " ./$0 docs # load offline docs"
   echo ""
   echo "-------------------------------------------------"
   echo ""
   echo "Steps:"
-  echo " - UNCLASS - ./air_gap_all_the_things.sh build"
+  echo " - UNCLASS - ./$0 build"
   echo " - Move the ZST file across the air gap"
   echo " - Build 3 vms with 4cpu and 8gb of ram"
   echo " - On 1st node ( Control Plane node ) run: mkdir /opt/rancher && tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher"
-  echo " - On 1st node run cd /opt/rancher; ./air_gap_all_the_things.sh control"
+  echo " - On 1st node run cd /opt/rancher; ./$0 control"
   echo " - Wait and watch for errors"
   echo " - On 2nd, and 3rd nodes run mkdir /opt/rancher && mount \$IP:/opt/rancher /opt/rancher"
-  echo " - On 2nd, and 3rd nodes run ./air_gap_all_the_things.sh worker"
+  echo " - On 2nd, and 3rd nodes run ./$0 worker"
   echo " - On 1st node install"
-  echo "   - Longhorn : ./air_gap_all_the_things.sh longhorn"
-  echo "   - Rancher : ./air_gap_all_the_things.sh rancher"
-  echo "   - Flask : ./air_gap_all_the_things.sh flask"
+  echo "   - Longhorn : ./$0 longhorn"
+  echo "   - Rancher : ./$0 rancher"
+  echo "   - Flask : ./$0 flask"
+  echo "   - Docs : ./$0 docs"
   echo ""
   echo "-------------------------------------------------"
   echo ""
@@ -435,7 +432,7 @@ case "$1" in
         longhorn) longhorn;;
         rancher) rancher;;
         flask) flask;;
-        howto) howto;;
+        docs) docs;;
         *) usage;;
 esac
 
