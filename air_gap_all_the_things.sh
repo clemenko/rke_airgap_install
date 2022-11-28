@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# yum install -y vim && mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/$0 && chmod 755 $0 
+# yum install -y vim && mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh && chmod 755 air_gap_all_the_things.sh
 
 set -ebpf
 
@@ -112,11 +112,6 @@ function build () {
   skopeo copy docker://mongo docker-archive:flask/mongo.tar > /dev/null 2>&1
   skopeo copy docker://clemenko/flask_demo docker-archive:flask/flask_demo.tar > /dev/null 2>&1
   curl -#L https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/flask.yaml -o /opt/rancher/images/flask/flask.yaml > /dev/null 2>&1
-
-  # docs
-  mkdir /opt/rancher/docs/
-  skopeo copy docker://clemenko/offline_docs docker-archive:/opt/rancher/docs/offline_docs.tar > /dev/null 2>&1
-  curl -#L https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/docs.yaml -o /opt/rancher/docs/docs.yaml 
 
   cd /opt/rancher/
   echo - compress all the things
@@ -359,20 +354,6 @@ function flask () {
 
 }
 
-################################# docs ################################
-function docs () {
-  
-  echo - load images
-  skopeo copy docker-archive:/opt/rancher/docs/offline_docs.tar docker://localhost:5000/offline_docs --dest-tls-verify=false
-
-  echo "------------------------------------------------------------------"
-  echo " to deploy: "
-  echo "   edit /opt/rancher/docs/docs.yaml to the ingress URL."
-  echo "   kubectl apply -f /opt/rancher/docs/docs.yaml"
-  echo "------------------------------------------------------------------"
-
-}
-
 ################################# longhorn ################################
 function longhorn () {
   echo - deploying longhorn
@@ -418,7 +399,6 @@ function usage () {
   echo "   - Longhorn : ./$0 longhorn"
   echo "   - Rancher : ./$0 rancher"
   echo "   - Flask : ./$0 flask"
-  echo "   - Docs : ./$0 docs"
   echo ""
   echo "-------------------------------------------------"
   echo ""
@@ -432,7 +412,6 @@ case "$1" in
         longhorn) longhorn;;
         rancher) rancher;;
         flask) flask;;
-        docs) docs;;
         *) usage;;
 esac
 
