@@ -26,6 +26,8 @@ We will need a few tools for this guide. Hopefully everything at handled by my [
 > * [Build](#Build)
 > * [Deploy Control Plane](#Deploy_Control_Plane)
 > * [Deploy Workers](#Deploy_Workers)
+> * [Rancher](#Rancher)
+> * [Longhorn](#Longhorn)
 > * [tl:dr](#tldr)
 > * [Conclusion](#conclusion)
 
@@ -116,7 +118,7 @@ Of course there is a script [deploy_control function](https://github.com/clemenk
 
 ## Deploy Workers
 
-Now that we have the first node running with RKE2 we can turn our attention to the worker nodes. The design of this guide is to use NFS to server out all the files to the cluster from the first node. This will same a ton of time on copying files around. We will also use the NFS for the registry storage. Here are the high level steps.
+Now that we have the first node running with RKE2 we can turn our attention to the worker nodes. The design of this guide is to use NFS to server out all the files to the cluster from the first node. This will same a ton of time on copying files around. We will also use the NFS for the registry storage. Here are the high level steps. On each of the worker nodes.
 
 - Add kernel tuning
 - Add packages
@@ -127,7 +129,13 @@ Now that we have the first node running with RKE2 we can turn our attention to t
 - Add Registry Image Locally
 - Install & Start RKE2 as Agent
 
-Rinse and Repeat for all the worker nodes. The in depth commands can be found in the [deploy worker function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L317).
+Rinse and Repeat. The in depth commands can be found in the [deploy worker function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L317).
+
+Now that we have the cluster built we can focus our attention to Rancher and Longhorn.
+
+## Rancher
+
+## Longhorn
 
 ## tl:dr
 
@@ -148,13 +156,35 @@ Edit `air_gap_all_the_things.sh` and validate the versions are correct.
 
 ### Run the Build
 
-Note: The `./air_gap_all_the_things.sh build` is only needed to get all the bits and create the tar.zst that needs to be air gapped. Please be patient as it is pulling 15Gb from the interwebs.
+Please be patient as it is pulling 15Gb from the interwebs.
 
 ```bash
 ./air_gap_all_the_things.sh build
 ```
 
 The result will be all the files under `/opt/rancher/` and the tar that needs to be moved `/opt/rke2_rancher_longhorn.zst`.
+
+### Move the Tar
+
+To the first node.
+
+### Deploy Control Plane
+
+```bash
+./air_gap_all_the_things.sh control
+```
+
+This will setup RKE2, deploy the registry and start NFS.
+
+### Deploy Workers
+
+```bash
+./air_gap_all_the_things.sh worker
+```
+
+### Rancher
+
+### Longhorn
 
 ## Conclusion
 
