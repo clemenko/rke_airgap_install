@@ -36,7 +36,9 @@ Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
 
 ## Prerequisites
 
-The prerequisites are fairly simple. We need 3 Linux servers ( airgap1, airgap2, airgap3 ) with one of the servers having access to the internet. To be fair we are going to use the internet to get the bits. The servers can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). For the video I am going to use [Harvester](https://www.rancher.com/products/harvester) running on a 1u server. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary.
+The prerequisites are fairly simple. We need 4 Linux servers ( build1, airgap1, airgap2, airgap3 ) with one of the servers having access to the internet ( build1 ). The servers can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). For the video I am going to use [Harvester](https://www.rancher.com/products/harvester) running on a 1u server. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary.
+
+![servers](img/servers.jpg)
 
 ## Build
 
@@ -137,7 +139,7 @@ curl -#L https://github.com/clemenko/rke_airgap_install/raw/main/registry.tar -o
 
 ### Package and Move all the bits
 
-Hopefully we have everything organized that we can `tar` up all the files. The ZST compression seems to be the best right now. 
+Hopefully we have everything organized that we can `tar` up all the files. The ZST compression seems to be the best right now.
 
 ```bash
 tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst *
@@ -145,9 +147,11 @@ tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst *
 
 ## Move the tar
 
-At the time of writing this guide the compressed zst is 5.3G. 
+At the time of writing this guide the compressed zst is 5.3G. Looks like there are some images that can be removed from the ZST. Your mileage may vary.
 
 ## Deploy Control Plane
+
+At a high level we are going to install RKE2 on the fi
 
 ### Uncompress
 
