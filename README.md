@@ -26,6 +26,7 @@ We will need a few tools for this guide. Hopefully everything at handled by my [
 > * [Build](#Build)
 > * [Deploy Control Plane](#Deploy_Control_Plane)
 > * [Deploy Workers](#Deploy_Workers)
+> * [tl:dr](#tl:dr)
 > * [Conclusion](#conclusion)
 
 ---
@@ -36,7 +37,7 @@ Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
 
 ## Prerequisites
 
-The prerequisites are fairly simple. We need 4 Rocky Linux servers. Centos or Rhel work just as well. All the servers will need access to a yum repo server. One of the servers will need access to the internet. The other three should be on the other side of the airgap. The servers can be bare metal or your favorite vm of choice. For the video I am going to use [Harvester](https://www.rancher.com/products/harvester) running on a 1u server. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary.
+The prerequisites are fairly simple. We need 4 Rocky Linux servers. Centos or Rhel work just as well. Start with 4 core, 8Gb Ram, and 80Gb hard drive. All the servers will need access to a yum repo server. One of the servers will need access to the internet. The other three should be on the other side of the airgap. The servers can be bare metal or your favorite vm of choice. For the video I am going to use [Harvester](https://www.rancher.com/products/harvester) running on a 1u server. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary.
 
 ![servers](img/servers.jpg)
 
@@ -44,106 +45,21 @@ The prerequisites are fairly simple. We need 4 Rocky Linux servers. Centos or Rh
 
 Because we are moving bits across an air gap we need a server with access to the internet. Let's ssh into the build server to start the download/build process. There are a few tools we will need like [Skopeo](https://github.com/containers/skopeo) and [Helm](https://helm.sh/). We will walk through getting everything needed. We will need root for all three servers. The following instructions are going to be high level. The script [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) will take care of almost everything.
 
-### Install Skopeo
+All the steps below are covered in geeky detail in the scripts [build function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L23).
 
-Skopeo is a great tool to inspect and interact with registries. We can use it to download the images in a clean manor. The bonus part is that we do not need a container runtime active.
+- Set Versions
+- Install skopeo and zstd
+- Mkdir `/opt/rancher`
+- Download RKE2 files
+- Get Helm
+- Add Helm Repos
+- Pull Helm Charts
+- Pull Image Lists
+- Clean Rancher Image List - Remove older versions
+- Skopeo `copy` All Images, Including Registry
+- Compress
 
-### Get Tarballs - RKE2
-
-For getting all the RKE2 files we can follow the docs at [https://docs.rke2.io/install/airgap](https://docs.rke2.io/install/airgap). There are two ways to install RKE2, RPM and the Tarball. I have found the tarball to be a little easier for air gaps. Especially if Ubuntu is potentially involved. All the files we need are being hosting on the [rke github](https://github.com/rancher/rke2/). The files that are needed are as follows :
-
-```bash
-export RKE_VERSION=1.24.8
-  # images
-  curl -#OL https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/rke2-images.linux-amd64.tar.zst
-  # binaries
-  curl -#OL https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/rke2.linux-amd64.tar.gz
-  # Sha
-  curl -#OL https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/sha256sum-amd64.txt
-  # selinux and common rpm
-  curl -#OL https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm
-  curl -#OL https://github.com/rancher/rke2-selinux/releases/download/v0.9.stable.1/rke2-selinux-0.9-1.el8.noarch.rpm
-```
-
-Along with the Tars we will need the tarball install script.
-
-```bash
- curl -sfL https://get.rke2.io -o install.sh
- ```
-
-### Get Helm Charts
-
-The good news about Helm is that all the charts are easy to get. However we will need to have helm installed on the build node. Helm is easy enough to install.
-
-```bash
-  curl -#L https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-```
-
-We will also need to use Helm on deploy process. So it might be worth while to get the Helm tar.
-
-```bash
-  curl -#LO https://get.helm.sh/helm-v3.10.2-linux-386.tar.gz 
-```
-
-With Helm installed we can add the repos and "pull" the charts. We will need the charts for Cert-Manager, Rancher and Longhorn.
-
-```bash
-export CERT_VERSION=v1.10.0
-export RANCHER_VERSION=v2.7.0
-export LONGHORN_VERSION=v1.3.2
-
-  helm repo add jetstack https://charts.jetstack.io 
-  helm repo add rancher-latest https://releases.rancher.com/server-charts/latest 
-  helm repo add longhorn https://charts.longhorn.io 
-  helm repo update 
-
-  helm pull jetstack/cert-manager --version $CERT_VERSION 
-  helm pull rancher-latest/rancher --version $RANCHER_VERSION 
-  helm pull longhorn/longhorn --version $LONGHORN_VERSION 
-```
-
-### Get Images - Rancher & Longhorn
-
-For getting the images we need to start with the image lists. There are two ways to get the image list. Either from the chart itself or from a published list. For Cert-Manager we can used the chart.
-
-```bash
-helm template /opt/rancher/helm/cert-manager-$CERT_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g > cert-manager-images.txt
-```
-
-For Rancher and Longhorn we need to pull the published list. For Rancher the list may include older versions that are not needed for a greenfield install. The script at the end of this guide cleans up the list for just the current versions.
-
-```bash
-# Rancher
-  curl -#L https://github.com/rancher/rancher/releases/download/$RANCHER_VERSION/rancher-images.txt -o rancher-images.txt
-
-# Longhorn
-  curl -#L https://raw.githubusercontent.com/longhorn/longhorn/$LONGHORN_VERSION/deploy/longhorn-images.txt longhorn-images.txt
-```
-
-Now that we have the image lists we can use [skopeo](https://github.com/containers/skopeo) to pull the images and save them locally. Here is an example of a for-do loop. The script will step through the list, pull the image, and then save it locally as a tar.
-
-```bash
-  echo - skopeo - cert-manager
-  for i in $(cat cert-manager-images.txt); do 
-    skopeo copy docker://$i docker-archive:$(echo $i| awk -F/ '{print $3}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
-  done
-```
-
-This process will need to be repeated for Longhorn, Rancher, and Cert-Manager.
-
-We will need to get one more image. We need the [Docker Registry](https://hub.docker.com/_/registry) for serving the images out internally.
-
-```bash
-curl -#L https://github.com/clemenko/rke_airgap_install/raw/main/registry.tar -o registry_2.tar
-```
-
-### Package and Move all the bits
-
-Hopefully we have everything organized that we can `tar` up all the files. The ZST compression seems to be the best right now.
-
-```bash
-tar -I zstd -vcf /opt/rke2_rancher_longhorn.zst *
-```
+There are quite a few steps in building the Tar. 
 
 ## Move the tar
 
@@ -188,7 +104,7 @@ With everything uncompressed we can now setup the RKE2 on the same, first, node.
 - Add RKE2 Configs with the STIG settings
 - Add RKE2 Audit Policy
 - Add Nginx TLS-Passthrough
-- Add Registry Image
+- Add Registry Image Locally
 - Install & Start RKE2
 - Setup Kubectl access
 - Setup & Start NFS
@@ -200,9 +116,20 @@ Of course there is a script [deploy_control function](https://github.com/clemenk
 
 ## Deploy Workers
 
-### Mount First Node
+Now that we have the first node running with RKE2 we can turn our attention to the worker nodes. The design of this guide is to use NFS to server out all the files to the cluster from the first node. This will same a ton of time on copying files around. We will also use the NFS for the registry storage. Here are the high level steps.
 
-## The SCRIPT
+- Add kernel tuning
+- Add packages
+- Mkdir - `mkdir /opt/rancher`
+- Mount First node - `mount $IP:/opt/rancher/`
+- Get Join Token from the Control Plane node
+- Add RKE2 Configs with the STIG settings
+- Add Registry Image Locally
+- Install & Start RKE2 as Agent
+
+Rinse and Repeat for all the worker nodes. The in depth commands can be found in the [deploy worker function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L317).
+
+## tl:dr
 
 ### Get the Script
 
@@ -217,7 +144,7 @@ chmod 755 air_gap_all_the_things.sh
 
 ### Check the Versions
 
-Edit `air_gap_all_the_things.sh` and validate the versions are correct. 
+Edit `air_gap_all_the_things.sh` and validate the versions are correct.
 
 ### Run the Build
 
