@@ -176,7 +176,27 @@ total 24
  4 drwxr-xr-x. 2 root root  4096 Nov 30 15:45 rke2_1.24.8
 ```
 
+Fantastic
+
 ### First Control Plane Node
+
+With everything uncompressed we can now setup the RKE2 on the same, first, node. The high level steps are as follows:
+
+- Add kernel tuning
+- Add packages
+- Add `etcd` user to the host
+- Add RKE2 Configs with the STIG settings
+- Add RKE2 Audit Policy
+- Add Nginx TLS-Passthrough
+- Add Registry Image
+- Install & Start RKE2
+- Setup Kubectl access
+- Setup & Start NFS
+- Deploy Registry `localhost:5000`
+- Load Images into registry
+- Unpack Helm
+
+Of course there is a script [deploy_control function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L195) that gives all the commands.
 
 ## Deploy Workers
 
