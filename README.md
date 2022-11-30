@@ -36,7 +36,7 @@ Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
 
 ## Prerequisites
 
-The prerequisites are fairly simple. We need 4 Linux servers ( build1, airgap1, airgap2, airgap3 ) with one of the servers having access to the internet ( build1 ). The servers can be bare metal, or in the cloud provider of your choice. I prefer [Digital Ocean](https://digitalocean.com). For the video I am going to use [Harvester](https://www.rancher.com/products/harvester) running on a 1u server. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary.
+The prerequisites are fairly simple. We need 4 Rocky Linux servers. Centos or Rhel work just as well. All the servers will need access to a yum repo server. One of the servers will need access to the internet. The other three should be on the other side of the airgap. The servers can be bare metal or your favorite vm of choice. For the video I am going to use [Harvester](https://www.rancher.com/products/harvester) running on a 1u server. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary.
 
 ![servers](img/servers.jpg)
 
