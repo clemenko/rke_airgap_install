@@ -122,6 +122,7 @@ function build () {
   echo "------------------------------------------------------------------"
   echo " to uncompress : "
   echo "   yum install -y zstd"
+  echo "   mkdir /opt/rancher"
   echo "   tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher"
   echo "------------------------------------------------------------------"
 
@@ -194,9 +195,8 @@ sysctl -p > /dev/null 2>&1
 ################################# deploy control ################################
 function deploy_control () {
   # this is for the first node
-  echo Untar the bits
-  #mkdir /opt/rancher
-  #tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
+  # mkdir /opt/rancher
+  # tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
 
   base
 

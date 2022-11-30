@@ -42,7 +42,7 @@ The prerequisites are fairly simple. We need 4 Rocky Linux servers. Centos or Rh
 
 ## Build
 
-Because we are moving bits across an air gap we need a server with access to the internet. Let's ssh into `airgap1` to start the download/build process. There are a few tools we will need like [Skopeo](https://github.com/containers/skopeo) and [Helm](https://helm.sh/). We will walk through getting everything needed. We will need root for all three servers. The following instructions are going to be high level. The script [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) will take care of almost everything.
+Because we are moving bits across an air gap we need a server with access to the internet. Let's ssh into the build server to start the download/build process. There are a few tools we will need like [Skopeo](https://github.com/containers/skopeo) and [Helm](https://helm.sh/). We will walk through getting everything needed. We will need root for all three servers. The following instructions are going to be high level. The script [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) will take care of almost everything.
 
 ### Install Skopeo
 
@@ -151,9 +151,30 @@ At the time of writing this guide the compressed zst is 5.3G. Looks like there a
 
 ## Deploy Control Plane
 
-At a high level we are going to install RKE2 on the fi
+At a high level we are going to install RKE2 on the first air gapped node. Let's start with copying the zst to the first node, let's call it `airgap1`. There are some needed packages on all three nodes. This packages as well as come kernel tuning can be found in the [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L132) script. We will need to apply the same to all the nodes.
 
 ### Uncompress
+
+Move the `rke2_rancher_longhorn.zst` to `/opt/`. From there we can uncompress it.
+
+```bash
+  yum install -y zstd
+  mkdir /opt/rancher
+  tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
+```
+
+We should now see all the files in the `/opt/rancher` directory.
+
+```bash
+[root@airgap1 opt]# ls -asl rancher/
+total 24
+ 0 drwxr-xr-x. 5 root root    84 Nov 30 15:45 .
+ 0 drwxr-xr-x. 3 root root    54 Nov 30 15:50 ..
+20 -rwxr-xr-x. 1 root root 18634 Nov 30 15:28 air_gap_all_the_things.sh
+ 0 drwxr-xr-x. 3 root root   143 Nov 30 15:45 helm
+ 0 drwxr-xr-x. 7 root root    78 Nov 30 15:45 images
+ 4 drwxr-xr-x. 2 root root  4096 Nov 30 15:45 rke2_1.24.8
+```
 
 ### First Control Plane Node
 
