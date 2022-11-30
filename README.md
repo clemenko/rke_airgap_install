@@ -26,7 +26,7 @@ We will need a few tools for this guide. Hopefully everything at handled by my [
 > * [Build](#Build)
 > * [Deploy Control Plane](#Deploy_Control_Plane)
 > * [Deploy Workers](#Deploy_Workers)
-> * [tl:dr](#tl:dr)
+> * [tl:dr](#tldr)
 > * [Conclusion](#conclusion)
 
 ---
