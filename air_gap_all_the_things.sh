@@ -103,7 +103,7 @@ function build () {
   done
 
   echo - skopeo - Neuvector
-  for i in $(cat /opt/rancher/neuvector/neuvector_images.txt); do 
+  for i in $(cat neuvector/neuvector_images.txt); do 
     skopeo copy docker://$i docker-archive:$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
   done
 
