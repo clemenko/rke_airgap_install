@@ -308,7 +308,7 @@ EOF
   echo "  - CD: \"cd /opt/rancher\""
   echo "  - Run: \""$0" worker\" on your worker nodes"
   echo "------------------------------------------------------------------"
-  echo "  - yolo: \"mkdir /opt/rancher && mount $(hostname -I | awk '{ print $1 }'):/opt/rancher /opt/rancher && cd /opt/rancher && ./$0 worker\""
+  echo "  - yolo: \"mkdir /opt/rancher && mount $(hostname -I | awk '{ print $1 }'):/opt/rancher /opt/rancher && cd /opt/rancher && $0 worker\""
   echo "------------------------------------------------------------------"
 
 }
@@ -365,9 +365,14 @@ function rancher () {
   echo - deploying rancher
   helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-v1.10.0.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert-manager-controller --set webhook.image.repository=localhost:5000/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert-manager-ctl
 
-  helm upgrade -i rancher /opt/rancher/helm/rancher-2.7.0.tgz --namespace cattle-system --create-namespace --set hostname=rancher.awesome.sauce --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000
+  helm upgrade -i rancher /opt/rancher/helm/rancher-2.7.0.tgz --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000 --set hostname=rancher.awesome.sauce
 }
 
+################################# validate ################################
+function validate () {
+  echo - showing images
+  kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
+}
 
 ############################# usage ################################
 function usage () {
@@ -376,29 +381,29 @@ function usage () {
   echo ""
   echo " Usage: $0 {build | deploy}"
   echo ""
-  echo " ./$0 build # download and create the monster TAR "
-  echo " ./$0 control # deploy on a control plane server"
-  echo " ./$0 worker # deploy on a worker"
-  echo " ./$0 flask # deploy a 3 tier app"
-  echo " ./$0 longhorn # deploy longhorn"
-  echo " ./$0 rancher # deploy rancher"
-  echo " ./$0 docs # load offline docs"
+  echo " $0 build # download and create the monster TAR "
+  echo " $0 control # deploy on a control plane server"
+  echo " $0 worker # deploy on a worker"
+  echo " $0 flask # deploy a 3 tier app"
+  echo " $0 longhorn # deploy longhorn"
+  echo " $0 rancher # deploy rancher"
+  echo " $0 validate # validate all the image locations"
   echo ""
   echo "-------------------------------------------------"
   echo ""
   echo "Steps:"
-  echo " - UNCLASS - ./$0 build"
+  echo " - UNCLASS - $0 build"
   echo " - Move the ZST file across the air gap"
   echo " - Build 3 vms with 4cpu and 8gb of ram"
   echo " - On 1st node ( Control Plane node ) run: mkdir /opt/rancher && tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher"
-  echo " - On 1st node run cd /opt/rancher; ./$0 control"
+  echo " - On 1st node run cd /opt/rancher; $0 control"
   echo " - Wait and watch for errors"
   echo " - On 2nd, and 3rd nodes run mkdir /opt/rancher && mount \$IP:/opt/rancher /opt/rancher"
-  echo " - On 2nd, and 3rd nodes run ./$0 worker"
+  echo " - On 2nd, and 3rd nodes run $0 worker"
   echo " - On 1st node install"
-  echo "   - Longhorn : ./$0 longhorn"
-  echo "   - Rancher : ./$0 rancher"
-  echo "   - Flask : ./$0 flask"
+  echo "   - Longhorn : $0 longhorn"
+  echo "   - Rancher : $0 rancher"
+  echo "   - Flask : $0 flask"
   echo ""
   echo "-------------------------------------------------"
   echo ""
@@ -412,6 +417,7 @@ case "$1" in
         longhorn) longhorn;;
         rancher) rancher;;
         flask) flask;;
+        validate) validate;;
         *) usage;;
 esac
 

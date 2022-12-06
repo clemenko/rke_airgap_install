@@ -61,7 +61,7 @@ All the steps below are covered in geeky detail in the scripts [build function](
 - Skopeo `copy` All Images, Including Registry
 - Compress
 
-There are quite a few steps in building the Tar. 
+There are quite a few steps in building the Tar.
 
 ## Move the tar
 
@@ -94,7 +94,7 @@ total 24
  4 drwxr-xr-x. 2 root root  4096 Nov 30 15:45 rke2_1.24.8
 ```
 
-Fantastic
+Fantastic, let's build the first control node.
 
 ### First Control Plane Node
 
@@ -135,7 +135,31 @@ Now that we have the cluster built we can focus our attention to Rancher and Lon
 
 ## Rancher
 
+For Rancher we are going to use the Helm Chart we imported. The good news is that everything we need is already loaded. The first chart we need to deploy is `cert-manager`. Cert Manager is used for creating certificates for Rancher. Please pay attention to all the options for the Helm command. We need to make sure we have the correct image locations and chart locations. Thanks to the NFS mount we are sharing the images to all the nodes. This is not meant for production. But it works well for a development/POC environment.
+
+Note that the `hostname=rancher.awesome.sauce` will need to be changed to reflect your DNS/network.
+
+```bash
+helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-v1.10.0.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert-manager-controller --set webhook.image.repository=localhost:5000/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert-manager-ctl
+
+helm upgrade -i rancher /opt/rancher/helm/rancher-2.7.0.tgz --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000 --set hostname=rancher.awesome.sauce
+```
+
+And not to disappoint there is a function, `rancher`, in the script to help with the deployment.
+
+```bash
+./air_gap_all_the_things.sh rancher
+```
+
+Once deployed you can log into you URL with `https` and start the bootstrapping process. The initial bootstrap password is `bootStrapAllTheThings`.
+
 ## Longhorn
+
+Longhorn is a little more simple than Rancher. It is a single Helm Chart. Once again please change the `ingress.host`.
+
+```bash
+helm upgrade -i longhorn /opt/rancher/helm/longhorn-1.3.2.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true  --set global.cattle.systemDefaultRegistry=localhost:5000 --set ingress.host=longhorn.awesome.sauce
+```
 
 ## tl:dr
 
@@ -184,7 +208,23 @@ This will setup RKE2, deploy the registry and start NFS.
 
 ### Rancher
 
+```bash
+./air_gap_all_the_things.sh rancher
+```
+
 ### Longhorn
+
+```bash
+./air_gap_all_the_things.sh longhorn
+```
+
+## Validate Images
+
+As a nice to have here is a command to validate the images are loaded from the local registry. Note that some of the images are pre-loaded and will look like they were loaded from the internet.
+
+```bash
+kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
+```
 
 ## Conclusion
 
