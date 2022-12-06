@@ -47,6 +47,8 @@ The prerequisites are fairly simple. We need 4 Rocky Linux servers. Centos or Rh
 
 ![servers](img/servers.jpg)
 
+Before you build take a look at all the files in the repo at [https://github.com/clemenko/rke_airgap_install](https://github.com/clemenko/rke_airgap_install)
+
 ## Build
 
 Because we are moving bits across an air gap we need a server with access to the internet. Let's ssh into the build server to start the download/build process. There are a few tools we will need like [Skopeo](https://github.com/containers/skopeo) and [Helm](https://helm.sh/). We will walk through getting everything needed. We will need root for all three servers. The following instructions are going to be high level. The script [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) will take care of almost everything.
