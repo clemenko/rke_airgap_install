@@ -129,7 +129,7 @@ metadata:
   namespace: flask
 spec:
   rules:
-  - host: app.rfed.io
+  - host: flask.awesome.sauce
     http:
       paths:
       - path: /
