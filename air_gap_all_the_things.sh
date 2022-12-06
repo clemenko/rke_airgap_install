@@ -97,6 +97,7 @@ function build () {
   echo - neuvector image list
   helm template /opt/rancher/helm/core-$NEU_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed -e 's/\"//g' > neuvector/neuvector_images.txt
 
+ # get images
   echo - skopeo - cert-manager
   for i in $(cat cert/cert-manager-images.txt); do 
     skopeo copy docker://$i docker-archive:cert/$(echo $i| awk -F/ '{print $3}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
@@ -139,7 +140,6 @@ function build () {
   echo "------------------------------------------------------------------"
 
 }
-
 
 ################################# base ################################
 function base () {
@@ -212,7 +212,7 @@ function deploy_control () {
 
   base
 
-  echo Install rke2
+  echo - Install rke2
   cd /opt/rancher/rke2_$RKE_VERSION
   useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
   mkdir -p /etc/rancher/rke2/ /var/lib/rancher/rke2/server/manifests/
@@ -224,9 +224,11 @@ function deploy_control () {
   # set up ssl passthrough for nginx
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml; 
 
+  # pre-load registry image
   mkdir -p /var/lib/rancher/rke2/agent/images
   rsync -avP /opt/rancher/images/registry/registry_2.tar /var/lib/rancher/rke2/agent/images/
 
+ # insall rke2 - stig'd
   INSTALL_RKE2_ARTIFACT_PATH=/opt/rancher/rke2_$RKE_VERSION sh /opt/rancher/rke2_$RKE_VERSION/install.sh 
   yum install -y /opt/rancher/rke2_$RKE_VERSION/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm /opt/rancher/rke2_$RKE_VERSION/rke2-selinux-0.9-1.el8.noarch.rpm
   systemctl enable rke2-server.service && systemctl start rke2-server.service
@@ -290,7 +292,8 @@ EOF
   for file in $(ls /opt/rancher/images/longhorn/ | grep -v txt ); do 
     skopeo copy docker-archive:/opt/rancher/images/longhorn/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/longhornio/"$1":"$2}') --dest-tls-verify=false
   done
-  # longhorn issue
+
+  # longhorn issue due to tags
   skopeo copy docker-archive:/opt/rancher/images/longhorn/longhorn-instance-manager_v1_20221003.tar docker://localhost:5000/longhornio/longhorn-instance-manager:v1_20221003 --dest-tls-verify=false
   skopeo copy docker-archive:/opt/rancher/images/longhorn/longhorn-share-manager_v1_20221003.tar docker://localhost:5000/longhornio/longhorn-share-manager:v1_20221003 --dest-tls-verify=false
 
@@ -315,9 +318,6 @@ EOF
 
   cat /var/lib/rancher/rke2/server/token > /opt/rancher/token
 
-  # deploy rancher : https://rancher.com/docs/rancher/v2.6/en/installation/other-installation-methods/air-gap/install-rancher/
-  # deploy longhorn : https://longhorn.io/docs/1.3.2/advanced-resources/deploy/airgap/#using-a-helm-chart
-
   echo "------------------------------------------------------------------"
   echo " Next:"
   echo "  - Mkdir: \"mkdir /opt/rancher\""
@@ -334,16 +334,22 @@ EOF
 function deploy_worker () {
   echo - deploy worker
 
+  # check for mount point
+  if [ ! -f /opt/rancher/token ]; then echo " -$RED Did you mount the volume from the first node?$NO_COLOR"; exit 1; fi
+
+  # base bits
   base
 
   export token=$(cat /opt/rancher/token)
   export server=$(mount |grep rancher | awk -F: '{print $1}')
 
+  # setup RKE2
   mkdir -p /etc/rancher/rke2/
   echo -e "server: https://$server:9345\ntoken: $token\nwrite-kubeconfig-mode: 0640\n#profile: cis-1.6\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
 
   chmod 600 /etc/rancher/rke2/config.yaml
 
+  # install rke2
   cd /opt/rancher
   INSTALL_RKE2_ARTIFACT_PATH=/opt/rancher/rke2_$RKE_VERSION INSTALL_RKE2_TYPE=agent sh /opt/rancher/rke2_$RKE_VERSION/install.sh 
   yum install -y /opt/rancher/rke2_$RKE_VERSION/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm /opt/rancher/rke2_$RKE_VERSION/rke2-selinux-0.9-1.el8.noarch.rpm
@@ -351,13 +357,11 @@ function deploy_worker () {
   rsync -avP /opt/rancher/images/registry/registry_2.tar /var/lib/rancher/rke2/agent/images/
   
   systemctl enable rke2-agent.service && systemctl start rke2-agent.service
-
 }
-
 
 ################################# flask ################################
 function flask () {
-  
+  # dummy 3 tier app - asked for by a customer. 
   echo - load images
   for file in $(ls /opt/rancher/images/flask/ | grep -v yaml ); do 
      skopeo copy docker-archive:/opt/rancher/images/flask/$file docker://$(echo $file | sed 's/.tar//g' | awk '{print "localhost:5000/flask/"$1}') --dest-tls-verify=false
@@ -373,18 +377,21 @@ function flask () {
 
 ################################# longhorn ################################
 function longhorn () {
+  # deploy longhorn with local helm/images
   echo - deploying longhorn
   helm upgrade -i longhorn /opt/rancher/helm/longhorn-1.3.2.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true --set ingress.host=longhorn.$DOMAIN --set global.cattle.systemDefaultRegistry=localhost:5000
 }
 
 ################################# neuvector ################################
 function neuvector () {
+  # deploy neuvector with local helm/images
   echo - deploying neuvector
   helm upgrade -i neuvector --namespace neuvector neuvector/core --create-namespace  --set imagePullSecrets=regsecret --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set controller.pvc.capacity=500Mi --set registry=localhost:5000 --set tag=5.0.5 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector.$DOMAIN
 }
 
 ################################# rancher ################################
 function rancher () {
+  # deploy rancher with local helm/images
   echo - deploying rancher
   helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-v1.10.0.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert-manager-controller --set webhook.image.repository=localhost:5000/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert-manager-ctl
 
