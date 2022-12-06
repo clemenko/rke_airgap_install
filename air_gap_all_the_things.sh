@@ -95,7 +95,7 @@ function build () {
   curl -#L https://raw.githubusercontent.com/longhorn/longhorn/$LONGHORN_VERSION/deploy/longhorn-images.txt -o longhorn/longhorn-images.txt
 
   echo - neuvector image list
-  helm template /opt/rancher/helm/core-$NEU_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed -e s#docker.io/##g -e s/\"//g > neuvector/neuvector_images.txt
+  helm template /opt/rancher/helm/core-$NEU_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed -e 's/\"//g' > neuvector/neuvector_images.txt
 
   echo - skopeo - cert-manager
   for i in $(cat cert/cert-manager-images.txt); do 
@@ -104,7 +104,7 @@ function build () {
 
   echo - skopeo - Neuvector
   for i in $(cat neuvector/neuvector_images.txt); do 
-    skopeo copy docker://$i docker-archive:$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
+    echo skopeo copy docker://$i docker-archive:$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
   done
 
   echo - skopeo - longhorn
