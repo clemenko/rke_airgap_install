@@ -7,7 +7,7 @@ author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 
 ![logp](img/rancher-long-banner.png)
 
-This guide is very similar to [Simple RKE2, Longhorn, and Rancher Install ](https://github.com/clemenko/rke_install_blog), except in one major way. This guide will provide a strategy for air gapping all the bits needed for RKE2, Longhorn and Rancher. This is just one opinion. We are starting from the idea that there is no container infrastructure available.
+This guide is very similar to [Simple RKE2, Neuvector, Longhorn, and Rancher Install ](https://github.com/clemenko/rke_install_blog), except in one major way. This guide will provide a strategy for air gapping all the bits needed for RKE2, Longhorn and Rancher. This is just one opinion. We are starting from the idea that there is no container infrastructure available.
 
 Throughout my career there has always been a disconnect between the documentation and the practical implementation. The Kubernetes (k8s) ecosystem is no stranger to this problem. This guide is a simple approach to installing Kubernetes and some REALLY useful tools. We will walk through installing all the following.
 
@@ -31,6 +31,8 @@ We will need a few tools for this guide. Hopefully everything at handled by my [
 > * [Longhorn](#Longhorn)
 > * [Neuvector](#Neuvector)
 > * [tl:dr](#tldr)
+> * [Validate Images](#Validate_Images)
+> * [Dockerfile](#Dockerfile)
 > * [Conclusion](#conclusion)
 
 ---
@@ -249,6 +251,10 @@ As a nice to have here is a command to validate the images are loaded from the l
 ```bash
 kubectl get pods -A -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
 ```
+
+## Dockerfile
+
+Why yes there is a Dockerfile to run the build phase. Take a look at the [Dockerfile](https://github.com/clemenko/rke_airgap_install/blob/main/Dockerfile) in the repo.
 
 ## Conclusion
 
