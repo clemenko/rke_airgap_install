@@ -104,7 +104,7 @@ function build () {
 
   echo - skopeo - Neuvector
   for i in $(cat neuvector/neuvector_images.txt); do 
-    echo skopeo copy docker://$i docker-archive:$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
+    skopeo copy docker://$i docker-archive:neuvector/$(echo $i| awk -F/ '{print $3}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
   done
 
   echo - skopeo - longhorn
@@ -296,6 +296,10 @@ EOF
 
   for file in $(ls /opt/rancher/images/cert/ | grep -v txt ); do 
     skopeo copy docker-archive:/opt/rancher/images/cert/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
+  done
+
+  for file in $(ls /opt/rancher/images/neuvector/ | grep -v txt ); do 
+    echo skopeo copy docker-archive:/opt/rancher/images/neuvector/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
   done
 
   for file in $(ls /opt/rancher/images/rancher/ | grep -v txt ); do 
