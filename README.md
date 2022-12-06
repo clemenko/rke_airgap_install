@@ -5,7 +5,7 @@ author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 
 # How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
 
-![logp](img/logo_long.jpg)
+![logp](img/rancher-long-banner.png)
 
 This guide is very similar to [Simple RKE2, Longhorn, and Rancher Install ](https://github.com/clemenko/rke_install_blog), except in one major way. This guide will provide a strategy for air gapping all the bits needed for RKE2, Longhorn and Rancher. This is just one opinion. We are starting from the idea that there is no container infrastructure available.
 
