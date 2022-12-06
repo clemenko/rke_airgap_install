@@ -228,4 +228,8 @@ kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].ima
 
 ## Conclusion
 
+At this point we really good foundation for installing RKE2, Longhorn and Rancher air gapped. The script is meant to be readable if the process needs to be broken down. Case in point if there a registry available internally then load the images there. The Helm commands will need to be changed to point to that registry. 
+
+If there are any issues, please feel free to reach out.
+
 ![success](img/success.jpg)
