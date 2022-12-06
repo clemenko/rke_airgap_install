@@ -299,7 +299,7 @@ EOF
   done
 
   for file in $(ls /opt/rancher/images/neuvector/ | grep -v txt ); do 
-    skopeo copy docker-archive:/opt/rancher/images/neuvector/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/"$1":"$2}') --dest-tls-verify=false
+    skopeo copy docker-archive:/opt/rancher/images/neuvector/$file docker://$(echo $file | sed 's/.tar//g' | awk -F_ '{print "localhost:5000/neuvector/"$1":"$2}') --dest-tls-verify=false
   done
 
   for file in $(ls /opt/rancher/images/rancher/ | grep -v txt ); do 
