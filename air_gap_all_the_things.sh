@@ -8,6 +8,8 @@ export RKE_VERSION=1.24.8
 export CERT_VERSION=v1.10.0
 export RANCHER_VERSION=v2.7.0
 export LONGHORN_VERSION=v1.3.2
+export NEU_VERSION=2.2.5 # this is the chart version for 5.0.5
+export DOMAIN=awesome.sauce
 
 ######  NO MOAR EDITS #######
 export RED='\x1b[0;31m'
@@ -53,17 +55,19 @@ function build () {
   helm repo add jetstack https://charts.jetstack.io > /dev/null 2>&1
   helm repo add rancher-latest https://releases.rancher.com/server-charts/latest > /dev/null 2>&1
   helm repo add longhorn https://charts.longhorn.io > /dev/null 2>&1
+  helm repo add neuvector https://neuvector.github.io/neuvector-helm/ > /dev/null 2>&1
   helm repo update > /dev/null 2>&1
 
   echo - get charts
   helm pull jetstack/cert-manager --version $CERT_VERSION > /dev/null 2>&1
   helm pull rancher-latest/rancher --version $RANCHER_VERSION > /dev/null 2>&1
   helm pull longhorn/longhorn --version $LONGHORN_VERSION > /dev/null 2>&1
+  helm pull neuvector/core --version $NEU_VERSION > /dev/null 2>&1
 
   echo - Get Images - Rancher/Longhorn
 
   echo - create image dir
-  mkdir -p /opt/rancher/images/{cert,rancher,longhorn,registry,flask}
+  mkdir -p /opt/rancher/images/{cert,rancher,longhorn,registry,flask,neuvector}
   cd /opt/rancher/images/
 
   echo - rancher image list 
@@ -84,15 +88,23 @@ function build () {
   # final sort
   cat rancher/version_unsorted.txt | sort -u >> rancher/rancher-images.txt
 
-  echo - We need to add the cert-manager images
+  echo - Cert-manager image list
   helm template /opt/rancher/helm/cert-manager-$CERT_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed s/\"//g > cert/cert-manager-images.txt
 
   echo - longhorn image list
   curl -#L https://raw.githubusercontent.com/longhorn/longhorn/$LONGHORN_VERSION/deploy/longhorn-images.txt -o longhorn/longhorn-images.txt
 
+  echo - neuvector image list
+  helm template /opt/rancher/helm/core-$NEU_VERSION.tgz | awk '$1 ~ /image:/ {print $2}' | sed -e s#docker.io/##g -e s/\"//g > neuvector/neuvector_images.txt
+
   echo - skopeo - cert-manager
   for i in $(cat cert/cert-manager-images.txt); do 
     skopeo copy docker://$i docker-archive:cert/$(echo $i| awk -F/ '{print $3}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
+  done
+
+  echo - skopeo - Neuvector
+  for i in $(cat /opt/rancher/neuvector/neuvector_images.txt); do 
+    skopeo copy docker://$i docker-archive:$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $3}') > /dev/null 2>&1
   done
 
   echo - skopeo - longhorn
@@ -358,7 +370,13 @@ function flask () {
 ################################# longhorn ################################
 function longhorn () {
   echo - deploying longhorn
-  helm upgrade -i longhorn /opt/rancher/helm/longhorn-1.3.2.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true --set ingress.host=longhorn.awesome.sauce --set global.cattle.systemDefaultRegistry=localhost:5000
+  helm upgrade -i longhorn /opt/rancher/helm/longhorn-1.3.2.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true --set ingress.host=longhorn.$DOMAIN --set global.cattle.systemDefaultRegistry=localhost:5000
+}
+
+################################# neuvector ################################
+function neuvector () {
+  echo - deploying neuvector
+  helm upgrade -i neuvector --namespace neuvector neuvector/core --create-namespace  --set imagePullSecrets=regsecret --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set controller.pvc.capacity=500Mi --set registry=localhost:5000 --set tag=5.0.5 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector.$DOMAIN
 }
 
 ################################# rancher ################################
@@ -366,13 +384,13 @@ function rancher () {
   echo - deploying rancher
   helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-v1.10.0.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert-manager-controller --set webhook.image.repository=localhost:5000/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert-manager-ctl
 
-  helm upgrade -i rancher /opt/rancher/helm/rancher-2.7.0.tgz --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000 --set hostname=rancher.awesome.sauce
+  helm upgrade -i rancher /opt/rancher/helm/rancher-2.7.0.tgz --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000 --set hostname=rancher.$DOMAIN
 }
 
 ################################# validate ################################
 function validate () {
   echo - showing images
-  kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
+  kubectl get pods -A -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
 }
 
 ############################# usage ################################
@@ -386,6 +404,7 @@ function usage () {
   echo " $0 control # deploy on a control plane server"
   echo " $0 worker # deploy on a worker"
   echo " $0 flask # deploy a 3 tier app"
+  echo " $0 neuvector # deploy neuvector"
   echo " $0 longhorn # deploy longhorn"
   echo " $0 rancher # deploy rancher"
   echo " $0 validate # validate all the image locations"
@@ -415,6 +434,7 @@ case "$1" in
         build ) build;;
         control) deploy_control;;
         worker) deploy_worker;;
+        neuvector) neuvector;;
         longhorn) longhorn;;
         rancher) rancher;;
         flask) flask;;

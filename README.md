@@ -1,9 +1,9 @@
 ---
-title: How to Air Gap RKE2, Longhorn, and Rancher
+title: How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
 author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 ---
 
-# How to Air Gap RKE2, Longhorn, and Rancher
+# How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
 
 ![logp](img/logo_long.jpg)
 
@@ -14,6 +14,7 @@ Throughout my career there has always been a disconnect between the documentatio
 - [RKE2](https://docs.rke2.io) - Security focused Kubernetes
 - [Rancher](https://www.suse.com/products/suse-rancher/) - Multi-Cluster Kubernetes Management
 - [Longhorn](https://longhorn.io) - Unified storage layer
+- [Neuvector](https://neuvector.com/) - Kubernetes Security Platform
 
 We will need a few tools for this guide. Hopefully everything at handled by my [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) script. For this guide all the commands will be in the script.
 
@@ -28,6 +29,7 @@ We will need a few tools for this guide. Hopefully everything at handled by my [
 > * [Deploy Workers](#Deploy_Workers)
 > * [Rancher](#Rancher)
 > * [Longhorn](#Longhorn)
+> * [Neuvector](#Neuvector)
 > * [tl:dr](#tldr)
 > * [Conclusion](#conclusion)
 
@@ -137,7 +139,7 @@ Now that we have the cluster built we can focus our attention to Rancher and Lon
 
 For Rancher we are going to use the Helm Chart we imported. The good news is that everything we need is already loaded. The first chart we need to deploy is `cert-manager`. Cert Manager is used for creating certificates for Rancher. Please pay attention to all the options for the Helm command. We need to make sure we have the correct image locations and chart locations. Thanks to the NFS mount we are sharing the images to all the nodes. This is not meant for production. But it works well for a development/POC environment.
 
-Note that the `hostname=rancher.awesome.sauce` will need to be changed to reflect your DNS/network.
+Note that the `hostname=rancher.awesome.sauce` will need to be changed to reflect your domain/DNS/network.
 
 ```bash
 helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-v1.10.0.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert-manager-controller --set webhook.image.repository=localhost:5000/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert-manager-ctl
@@ -145,7 +147,7 @@ helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-v1.10.0.tgz --namesp
 helm upgrade -i rancher /opt/rancher/helm/rancher-2.7.0.tgz --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000 --set hostname=rancher.awesome.sauce
 ```
 
-And not to disappoint there is a function, `rancher`, in the script to help with the deployment.
+And not to disappoint there is a function, `rancher`, in the script to help with the deployment. Check out the [tl:dr](#tldr) section. The script will need to be edited.
 
 ```bash
 ./air_gap_all_the_things.sh rancher
@@ -155,11 +157,21 @@ Once deployed you can log into you URL with `https` and start the bootstrapping 
 
 ## Longhorn
 
-Longhorn is a little more simple than Rancher. It is a single Helm Chart. Once again please change the `ingress.host`.
+Longhorn is a little more simple than Rancher. It is a single Helm Chart. Once again please change the `export DOMAIN=awesome.sauce`.
 
 ```bash
 helm upgrade -i longhorn /opt/rancher/helm/longhorn-1.3.2.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true  --set global.cattle.systemDefaultRegistry=localhost:5000 --set ingress.host=longhorn.awesome.sauce
 ```
+
+## Neuvector
+
+Along with Longhorn the Neuvector is a simple Helm install. Once again please change the `manager.ingress.host=neuvector.awesome.sauce`.
+
+```bash
+helm upgrade -i neuvector /opt/rancher/helm/core-2.5.5.tgz --namespace neuvector --create-namespace  --set imagePullSecrets=regsecret --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set controller.pvc.capacity=500Mi --set registry=localhost:5000 --set tag=5.0.5 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector..awesome.sauce
+```
+
+Again the script will simplify things.
 
 ## tl:dr
 
@@ -206,6 +218,12 @@ This will setup RKE2, deploy the registry and start NFS.
 ./air_gap_all_the_things.sh worker
 ```
 
+### Update the DOMAIN Variable
+
+```bash
+vi ./air_gap_all_the_things.sh
+```
+
 ### Rancher
 
 ```bash
@@ -218,17 +236,23 @@ This will setup RKE2, deploy the registry and start NFS.
 ./air_gap_all_the_things.sh longhorn
 ```
 
+### Neuvector
+
+```bash
+./air_gap_all_the_things.sh neuvector
+```
+
 ## Validate Images
 
 As a nice to have here is a command to validate the images are loaded from the local registry. Note that some of the images are pre-loaded and will look like they were loaded from the internet.
 
 ```bash
-kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
+kubectl get pods -A -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
 ```
 
 ## Conclusion
 
-At this point we really good foundation for installing RKE2, Longhorn and Rancher air gapped. The script is meant to be readable if the process needs to be broken down. Case in point if there a registry available internally then load the images there. The Helm commands will need to be changed to point to that registry. 
+At this point we really good foundation for installing RKE2, Neuvector, Longhorn, and Rancher air gapped. The script is meant to be readable if the process needs to be broken down. Case in point if there a registry available internally then load the images there. The Helm commands will need to be changed to point to that registry.
 
 If there are any issues, please feel free to reach out.
 
