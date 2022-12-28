@@ -4,7 +4,7 @@
 
 set -ebpf
 
-export RKE_VERSION=1.24.8
+export RKE_VERSION=1.24.9
 export CERT_VERSION=v1.10.0
 export RANCHER_VERSION=v2.7.0
 export LONGHORN_VERSION=v1.3.2
@@ -36,7 +36,7 @@ function build () {
   curl -#OL https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/rke2.linux-amd64.tar.gz
   curl -#OL https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/sha256sum-amd64.txt
   curl -#OL https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-common-$RKE_VERSION.rke2r1-0.x86_64.rpm
-  curl -#OL https://github.com/rancher/rke2-selinux/releases/download/v0.9.stable.1/rke2-selinux-0.9-1.el8.noarch.rpm
+  curl -#OL https://github.com/rancher/rke2-selinux/releases/download/v0.11.stable.1/rke2-selinux-0.11-1.el8.noarch.rpm
 
   echo - get the install script
   curl -sfL https://get.rke2.io -o install.sh
