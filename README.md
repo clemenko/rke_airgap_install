@@ -71,7 +71,7 @@ There are quite a few steps in building the Tar.
 
 ## Move the tar
 
-At the time of writing this guide the compressed zst is 5.3G. Looks like there are some images that can be removed from the ZST. Your mileage may vary.
+At the time of writing this guide the compressed zst is 5.3G. The output zst is in the `/opt/` directory. Time to move it across the air gap.
 
 ## Deploy Control Plane
 
