@@ -18,6 +18,8 @@ Throughout my career there has always been a disconnect between the documentatio
 
 We will need a few tools for this guide. Hopefully everything at handled by my [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) script. For this guide all the commands will be in the script.
 
+For those that like videos, [Watch the video](https://youtu.be/IkQJc5-_duo).
+
 ---
 
 > **Table of Contents**:
