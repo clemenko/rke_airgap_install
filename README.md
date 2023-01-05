@@ -1,13 +1,13 @@
 ---
 title: How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
-author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
+author: Andy zackbradys, @zackbradys, andy.zackbradys@rancherfederal.com
 ---
 
 # How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
 
 ![logp](img/rancher-long-banner.png)
 
-This guide is very similar to [Simple RKE2, Neuvector, Longhorn, and Rancher Install ](https://github.com/clemenko/rke_install_blog), except in one major way. This guide will provide a strategy for air gapping all the bits needed for RKE2, Longhorn and Rancher. This is just one opinion. We are starting from the idea that there is no container infrastructure available.
+This guide is very similar to [Simple RKE2, Neuvector, Longhorn, and Rancher Install ](https://github.com/zackbradys/rke_install_blog), except in one major way. This guide will provide a strategy for air gapping all the bits needed for RKE2, Longhorn and Rancher. This is just one opinion. We are starting from the idea that there is no container infrastructure available.
 
 Throughout my career there has always been a disconnect between the documentation and the practical implementation. The Kubernetes (k8s) ecosystem is no stranger to this problem. This guide is a simple approach to installing Kubernetes and some REALLY useful tools. We will walk through installing all the following.
 
@@ -16,7 +16,7 @@ Throughout my career there has always been a disconnect between the documentatio
 - [Longhorn](https://longhorn.io) - Unified storage layer
 - [Neuvector](https://neuvector.com/) - Kubernetes Security Platform
 
-We will need a few tools for this guide. Hopefully everything at handled by my [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) script. For this guide all the commands will be in the script.
+We will need a few tools for this guide. Hopefully everything at handled by my [air_gap_all_the_things.sh](https://github.com/zackbradys/rke_airgap_install/blob/main/air_gap_all_the_things.sh) script. For this guide all the commands will be in the script.
 
 For those that like videos, [Watch the video](https://youtu.be/IkQJc5-_duo).
 
@@ -41,7 +41,7 @@ For those that like videos, [Watch the video](https://youtu.be/IkQJc5-_duo).
 
 ## Whoami
 
-Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
+Just a geek - Andy zackbradys - @zackbradys - andy.zackbradys@rancherfederal.com
 
 ## Prerequisites
 
@@ -49,13 +49,13 @@ The prerequisites are fairly simple. We need 4 [Rocky](https://rockylinux.org/) 
 
 ![servers](img/servers.jpg)
 
-Before you build take a look at all the files in the repo at [https://github.com/clemenko/rke_airgap_install](https://github.com/clemenko/rke_airgap_install)
+Before you build take a look at all the files in the repo at [https://github.com/zackbradys/rke_airgap_install](https://github.com/zackbradys/rke_airgap_install)
 
 ## Build
 
-Because we are moving bits across an air gap we need a server with access to the internet. Let's ssh into the build server to start the download/build process. There are a few tools we will need like [Skopeo](https://github.com/containers/skopeo) and [Helm](https://helm.sh/). We will walk through getting everything needed. We will need root for all three servers. The following instructions are going to be high level. The script [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) will take care of almost everything.
+Because we are moving bits across an air gap we need a server with access to the internet. Let's ssh into the build server to start the download/build process. There are a few tools we will need like [Skopeo](https://github.com/containers/skopeo) and [Helm](https://helm.sh/). We will walk through getting everything needed. We will need root for all three servers. The following instructions are going to be high level. The script [air_gap_all_the_things.sh](https://github.com/zackbradys/rke_airgap_install/blob/main/air_gap_all_the_things.sh) will take care of almost everything.
 
-All the steps below are covered in geeky detail in the scripts [build function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L23).
+All the steps below are covered in geeky detail in the scripts [build function](https://github.com/zackbradys/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L23).
 
 - Set Versions
 - Install skopeo and zstd
@@ -77,7 +77,7 @@ At the time of writing this guide the compressed zst is 5.8G. The output zst is 
 
 ## Deploy Control Plane
 
-At a high level we are going to install RKE2 on the first air gapped node. Let's start with copying the zst to the first node, let's call it `airgap1`. There are some needed packages on all three nodes. This packages as well as come kernel tuning can be found in the [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L132) script. We will need to apply the same to all the nodes.
+At a high level we are going to install RKE2 on the first air gapped node. Let's start with copying the zst to the first node, let's call it `airgap1`. There are some needed packages on all three nodes. This packages as well as come kernel tuning can be found in the [air_gap_all_the_things.sh](https://github.com/zackbradys/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L132) script. We will need to apply the same to all the nodes.
 
 ### Uncompress
 
@@ -122,7 +122,7 @@ With everything uncompressed we can now setup the RKE2 on the same, first, node.
 - Load Images into registry
 - Unpack Helm
 
-Of course there is a script [deploy_control function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L195) that gives all the commands.
+Of course there is a script [deploy_control function](https://github.com/zackbradys/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L195) that gives all the commands.
 
 ## Deploy Workers
 
@@ -137,7 +137,7 @@ Now that we have the first node running with RKE2 we can turn our attention to t
 - Add Registry Image Locally
 - Install & Start RKE2 as Agent
 
-Rinse and Repeat. The in depth commands can be found in the [deploy worker function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L317).
+Rinse and Repeat. The in depth commands can be found in the [deploy worker function](https://github.com/zackbradys/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L317).
 
 Now that we have the cluster built we can focus our attention to Rancher and Longhorn.
 
@@ -188,7 +188,7 @@ We are going to use `curl` to get the script from Github. Keep in mind that the 
 ```bash
 mkdir /opt/rancher
 cd /opt/rancher
-curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh
+curl -#OL https://raw.githubusercontent.com/zackbradys/rke_airgap_install/main/air_gap_all_the_things.sh
 chmod 755 air_gap_all_the_things.sh
 ```
 
@@ -258,7 +258,7 @@ kubectl get pods -A -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '
 
 ## Dockerfile
 
-Why yes there is a Dockerfile to run the build phase. Take a look at the [Dockerfile](https://github.com/clemenko/rke_airgap_install/blob/main/Dockerfile) in the repo.
+Why yes there is a Dockerfile to run the build phase. Take a look at the [Dockerfile](https://github.com/zackbradys/rke_airgap_install/blob/main/Dockerfile) in the repo.
 
 ## Conclusion
 

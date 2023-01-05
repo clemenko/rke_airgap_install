@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# yum install -y vim && mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh && chmod 755 air_gap_all_the_things.sh
+# yum install -y vim && mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/zackbradys/rke_airgap_install/main/air_gap_all_the_things.sh && chmod 755 air_gap_all_the_things.sh
 
 set -ebpf
 
@@ -118,13 +118,13 @@ function build () {
     skopeo copy docker://$i docker-archive:rancher/$(echo $i| awk -F/ '{print $2}'|sed 's/:/_/g').tar:$(echo $i| awk -F/ '{print $2}') > /dev/null 2>&1
   done
 
-  curl -#L https://github.com/clemenko/rke_airgap_install/raw/main/registry.tar -o registry/registry_2.tar > /dev/null 2>&1
+  curl -#L https://github.com/zackbradys/rke_airgap_install/raw/main/registry.tar -o registry/registry_2.tar > /dev/null 2>&1
 
   # add flask app and yaml.
   skopeo copy docker://redis docker-archive:flask/redis.tar > /dev/null 2>&1
   skopeo copy docker://mongo docker-archive:flask/mongo.tar > /dev/null 2>&1
-  skopeo copy docker://clemenko/flask_demo docker-archive:flask/flask_demo.tar > /dev/null 2>&1
-  curl -#L https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/flask.yaml -o /opt/rancher/images/flask/flask.yaml > /dev/null 2>&1
+  skopeo copy docker://zackbradys/flask_demo docker-archive:flask/flask_demo.tar > /dev/null 2>&1
+  curl -#L https://raw.githubusercontent.com/zackbradys/rke_airgap_install/main/flask.yaml -o /opt/rancher/images/flask/flask.yaml > /dev/null 2>&1
 
   cd /opt/rancher/
   echo - compress all the things
