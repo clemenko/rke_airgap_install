@@ -20,17 +20,17 @@ export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]")
 if [ $(whoami) != "root" ] ; then echo -e "$RED" " ** please run $0 as root ** " "$NO_COLOR"; exit; fi
 
 # get helm if needed
-echo -e "installing helm "
+echo -e "checking helm "
 command -v helm >/dev/null 2>&1 || { echo -e -n "$RED" " ** helm was not found ** ""$NO_COLOR"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash  > /dev/null 2>&1; }
 echo -e "- installed ""$GREEN""ok" "$NO_COLOR"
 
 # get hauler if needed
-echo -e "installing hauler "
+echo -e "checking hauler "
 command -v hauler >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | HAULER_VERSION=0.4.3-rc.1 bash  > /dev/null 2>&1; }
 echo -e "- installed ""$GREEN""ok" "$NO_COLOR"
 
 # get jq if needed
-echo -e "installing jq "
+echo -e "checking jq "
 command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; yum install -y jq > /dev/null 2>&1; }
 echo -e "- installed ""$GREEN""ok" "$NO_COLOR"
 
