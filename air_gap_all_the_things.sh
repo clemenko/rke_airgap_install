@@ -89,12 +89,13 @@ function build () {
 
   # capi fixes
   grep cluster-api rancher/orig_rancher-images.txt >> rancher/cleaned_orig_rancher-images.txt
-  grep rancher/kubectl rancher/orig_rancher-images.txt >> rancher/cleaned_orig_rancher-images.txt
 
   # get latest version
   for i in $(cat rancher/cleaned_orig_rancher-images.txt|awk -F: '{print $1}'); do 
     grep -w "$i" rancher/cleaned_orig_rancher-images.txt | sort -Vr| head -1 >> rancher/version_unsorted.txt
   done
+
+  grep rancher/kubectl rancher/orig_rancher-images.txt >> rancher/version_unsorted.txt
 
   # final sort
   sort -u rancher/version_unsorted.txt > rancher/rancher-images.txt
