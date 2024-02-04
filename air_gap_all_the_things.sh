@@ -26,14 +26,19 @@ export PATH=$PATH:/usr/local/bin
 # el version
 export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]")
 
+
+function skoepo_test () {
 #better error checking
 echo -e "checking skopeo "
 command -v skopeo >/dev/null 2>&1 || { echo -e -n "$RED" " ** skopeo was not found ** ""$NO_COLOR"; yum install -y skopeo > /dev/null 2>&1; }
 echo -e "- installed ""$GREEN""ok" "$NO_COLOR"
+}
 
 ################################# build ################################
 function build () {
-  
+
+  skoepo_test
+
   echo - Installing packages
   yum install zstd skopeo -y > /dev/null 2>&1
 
@@ -220,6 +225,8 @@ function deploy_control () {
   # this is for the first node
   # mkdir /opt/rancher
   # tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
+  
+  skoepo_test
 
   base
 
