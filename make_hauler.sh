@@ -58,6 +58,10 @@ apiVersion: content.hauler.cattle.io/v1alpha1
 kind: Images
 metadata:
   name: rancher-images
+  annotations:
+   # hauler.dev/key: <cosign public key>
+    hauler.dev/platform: linux/amd64
+   # hauler.dev/registry: <registry>
 spec:       
   images:
 EOF
@@ -135,7 +139,7 @@ echo -e "$GREEN""ok" "$NO_COLOR"
 echo "-------------------------------------------------------------------------------------------"
 echo " hauler store and save: "
 echo " "
-echo -e " -$BLUE hauler store sync -p linux/amd64 -f airgap_hauler.yaml$NO_COLOR"
+echo -e " -$BLUE hauler store sync -f airgap_hauler.yaml$NO_COLOR"
 echo -e " -$BLUE hauler store save$NO_COLOR"
 echo " "
 echo " hauler docs: https://rancherfederal.github.io/hauler-docs/ "
