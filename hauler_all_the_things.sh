@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# mkdir /opt/rancher && cd /opt/rancher && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh && chmod 755 air_gap_all_the_things.sh
+# cd /opt && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
 # -----------
 
@@ -350,7 +350,7 @@ EOF
 
   echo "------------------------------------------------------------------------------------"
   echo "  Run:"
-  echo "  - $BLUE'curl -sfL https://$serverIp/$0 | bash'$NO_COLOR on your worker nodes"
+  echo "  - $BLUE'curl -sfL https://$serverIp/$0 | bash -s -- worker $serverIp'$NO_COLOR on your worker nodes"
   echo "------------------------------------------------------------------------------------"
 
 }
@@ -371,14 +371,15 @@ enabled=1
 gpgcheck=0
 EOF
 
-  # get bits
-
   # setup RKE2
   mkdir -p /etc/rancher/rke2/
   echo -e "server: https://$serverIp:9345\ntoken: bootstrapAllTheThings\nwrite-kubeconfig-mode: 0600\n#profile: cis-1.23\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
+  
+  # set registry override
+  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  $serverIp:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # install rke2
-  yum install -y rke2-server rke2-common rke2-selinux
+  yum install -y rke2-agent rke2-common rke2-selinux
   systemctl enable --now rke2-agent.service
 }
 
