@@ -17,17 +17,15 @@ export NO_COLOR='\x1b[0m'
 export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]")
 
 # check for root
-if [ $(whoami) != "root" ] ; then echo -e "$RED" " ** please run $0 as root ** " "$NO_COLOR"; exit; fi
+#if [ $(whoami) != "root" ] ; then echo -e "$RED" " ** please run $0 as root ** " "$NO_COLOR"; exit; fi
 
 # get helm if needed
 echo -e "checking helm "
 command -v helm >/dev/null 2>&1 || { echo -e -n "$RED" " ** helm was not found ** ""$NO_COLOR"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash  > /dev/null 2>&1; }
-echo -e "- installed ""$GREEN""ok" "$NO_COLOR"
 
 # get hauler if needed
 echo -e "checking hauler "
-command -v hauler >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | HAULER_VERSION=0.4.3-rc.1 bash  > /dev/null 2>&1; }
-echo -e "- installed ""$GREEN""ok" "$NO_COLOR"
+command -v hauler >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | bash  > /dev/null 2>&1; }
 
 # get jq if needed
 echo -e "checking jq "
@@ -129,6 +127,7 @@ spec:
     - path: https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/sha256sum-amd64.txt
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-common-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
     - path: https://github.com/rancher/rke2-selinux/releases/download/v0.17.stable.1/rke2-selinux-0.17-1.$EL.noarch.rpm
+    - path: https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r .tag_name)-linux-amd64.tar.gz
 EOF
 
 echo -e "$GREEN""ok" "$NO_COLOR"
