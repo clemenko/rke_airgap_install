@@ -1,14 +1,10 @@
 #!/bin/bash
 
-# cd /opt && curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
+# mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
 # -----------
-
-# https://github.com/rancher/rke2/releases/tag/v1.27.10%2Brke2r1
-# https://github.com/rancher/rke2-packaging/releases/tag/v1.27.10%2Brke2r1.stable.0
-
-# rpm - https://docs.rke2.io/install/methods/#rpm
-
+# this script is designed to bootstrap a POC cluster using Hauler
+# this is NOT meant for production!
 # -----------
 
 set -ebpf
@@ -52,7 +48,6 @@ function build () {
   command -v helm >/dev/null 2>&1 || { warn "helm was not found"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1; } 
   echo -n "  - installed "; info_ok
 
-  mkdir -p /opt/hauler
   cd /opt/hauler
 
   info "creating hauler manifest"
@@ -181,17 +176,20 @@ EOF
 ################################# hauler_setup ################################
 function hauler_setup () {
 
-cd /opt/hauler
+# make sure it is not running
+if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
 
-info "setting up hauler"
+  cd /opt/hauler
 
-# install
-install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin"
+  info "setting up hauler"
 
-# load
-hauler store load /opt/hauler/haul.tar.zst || fatal "Failed to load hauler store"
+  # install
+  install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin"
 
-# add systemd file
+  # load
+  hauler store load /opt/hauler/haul.tar.zst || fatal "Failed to load hauler store"
+
+  # add systemd file
 cat << EOF > /etc/systemd/system/hauler@.service
 # /etc/systemd/system/hauler.service
 [Unit]
@@ -206,24 +204,29 @@ WorkingDirectory=/opt/hauler
 WantedBy=multi-user.target
 EOF
 
-#reload daemon
-systemctl daemon-reload
+  #reload daemon
+  systemctl daemon-reload
 
-# start reg
-systemctl enable --now hauler@registry || fatal "hauler registry did not start"
-echo -n " - registry started"; info_ok
+  # start reg
+  systemctl enable --now hauler@registry || fatal "hauler registry did not start"
+  echo -n " - registry started"; info_ok
 
-# start fileserver
-systemctl enable --now hauler@fileserver || fatal "hauler fileserver did not start"
-echo -n " - fileserver started"; info_ok
+  # start fileserver
+  systemctl enable --now hauler@fileserver || fatal "hauler fileserver did not start"
+  echo -n " - fileserver started"; info_ok
 
-# install createrepo
-yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
+  # install createrepo
+  yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
 
-# wait for fileserver to come up.
-until [ -d /opt/hauler/store-files ]; do sleep 2; done
-cd /opt/hauler/store-files
-createrepo .
+  # wait for fileserver to come up.
+  until [ $(ls -asl /opt/hauler/store-files/*.rpm | wc -l) == 4 ]; do sleep 2; done
+  cd /opt/hauler/store-files
+  createrepo . > /dev/null 2>&1
+ 
+  # generate an index file
+  hauler store info > /opt/hauler/store-files/hauler_index.txt
+
+fi
 
 }
 
@@ -232,7 +235,7 @@ function base () {
   # install all the base bits.
 
   info "updating kernel settings"
-  cat << EOF >> /etc/sysctl.conf
+  cat << EOF > /etc/sysctl.conf
 # SWAP settings
 vm.swappiness=0
 vm.panic_on_oom=0
@@ -285,8 +288,8 @@ EOF
 sysctl -p > /dev/null 2>&1
 
   info "installing base packages"
-  yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils
-  systemctl enable --now iscsid
+  yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1
+  systemctl enable --now iscsid > /dev/null 2>&1
   echo -e "[keyfile]\nunmanaged-devices=interface-name:cali*;interface-name:flannel*" > /etc/NetworkManager/conf.d/rke2-canal.conf
 }
 
@@ -306,6 +309,9 @@ enabled=1
 gpgcheck=0
 EOF
 
+  # clean all the yums
+  yum clean all 
+
   # kernel and package stuff
   base
 
@@ -320,7 +326,7 @@ EOF
 
   useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
   mkdir -p /etc/rancher/rke2/ /var/lib/rancher/rke2/server/manifests/ /var/lib/rancher/rke2/agent/images
-  echo -e "#profile: cis-1.23\nselinux: true\nsecrets-encryption: true\ntoken: bootstrapAllTheThings\nsystem-default-registry: $serverIp:5000 \nwrite-kubeconfig-mode: 0600\nkube-controller-manager-arg:\n- bind-address=127.0.0.1\n- use-service-account-credentials=true\n- tls-min-version=VersionTLS12\n- tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\nkube-scheduler-arg:\n- tls-min-version=VersionTLS12\n- tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\nkube-apiserver-arg:\n- tls-min-version=VersionTLS12\n- tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\n- authorization-mode=RBAC,Node\n- anonymous-auth=false\n- audit-policy-file=/etc/rancher/rke2/audit-policy.yaml\n- audit-log-mode=blocking-strict\n- audit-log-maxage=30\nkubelet-arg:\n- protect-kernel-defaults=true\n- read-only-port=0\n- authorization-mode=Webhook" > /etc/rancher/rke2/config.yaml
+  echo -e "#profile: cis-1.23\nselinux: true\nsecrets-encryption: true\ntoken: bootstrapAllTheThings\nwrite-kubeconfig-mode: 0600\nkube-controller-manager-arg:\n- bind-address=127.0.0.1\n- use-service-account-credentials=true\n- tls-min-version=VersionTLS12\n- tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\nkube-scheduler-arg:\n- tls-min-version=VersionTLS12\n- tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\nkube-apiserver-arg:\n- tls-min-version=VersionTLS12\n- tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\n- authorization-mode=RBAC,Node\n- anonymous-auth=false\n- audit-policy-file=/etc/rancher/rke2/audit-policy.yaml\n- audit-log-mode=blocking-strict\n- audit-log-maxage=30\nkubelet-arg:\n- protect-kernel-defaults=true\n- read-only-port=0\n- authorization-mode=Webhook" > /etc/rancher/rke2/config.yaml
 
   # set up audit policy file
   echo -e "apiVersion: audit.k8s.io/v1\nkind: Policy\nmetadata:\n  name: rke2-audit-policy\nrules:\n  - level: Metadata\n    resources:\n    - group: \"\"\n      resources: [\"secrets\"]\n  - level: RequestResponse\n    resources:\n    - group: \"\"\n      resources: [\"*\"]" > /etc/rancher/rke2/audit-policy.yaml
@@ -329,13 +335,13 @@ EOF
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
 
   # set registry override
-  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  $serverIp:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
+  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  \"$serverIp:5000\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # insall rke2 - stig'd
   yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1
   systemctl enable --now rke2-server.service > /dev/null 2>&1
 
-  sleep 60
+  until [ systemctl is-active -q rke2-server ]; do sleep 2; done
 
   # wait and add link
   echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml PATH=$PATH:/var/lib/rancher/rke2/bin" >> ~/.bashrc
@@ -350,7 +356,7 @@ EOF
 
   echo "------------------------------------------------------------------------------------"
   echo "  Run:"
-  echo "  - $BLUE'curl -sfL https://$serverIp/$0 | bash -s -- worker $serverIp'$NO_COLOR on your worker nodes"
+  echo "  - $BLUE'curl -sfL http://$serverIp:8080/$0 | bash -s -- worker $serverIp'$NO_COLOR on your worker nodes"
   echo "------------------------------------------------------------------------------------"
 
 }
@@ -371,6 +377,9 @@ enabled=1
 gpgcheck=0
 EOF
 
+  # clean all the yums
+  yum clean all 
+
   # setup RKE2
   mkdir -p /etc/rancher/rke2/
   echo -e "server: https://$serverIp:9345\ntoken: bootstrapAllTheThings\nwrite-kubeconfig-mode: 0600\n#profile: cis-1.23\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
@@ -379,7 +388,7 @@ EOF
   echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  $serverIp:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # install rke2
-  yum install -y rke2-agent rke2-common rke2-selinux
+  yum install -y rke2-agent rke2-common rke2-selinux > /dev/null 2>&1
   systemctl enable --now rke2-agent.service
 }
 
@@ -398,31 +407,31 @@ function flask () {
 ################################# longhorn ################################
 function longhorn () {
   # deploy longhorn with local helm/images
-  echo - deploying longhorn
-  helm upgrade -i longhorn /opt/rancher/helm/longhorn-$LONGHORN_VERSION.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true --set ingress.host=longhorn.$DOMAIN --set global.cattle.systemDefaultRegistry=localhost:5000
+  info "deploying longhorn"
+    helm upgrade -i longhorn oci://$serverIp:5000/hauler/longhorn --namespace longhorn-system --create-namespace --set ingress.enabled=true --set ingress.host=longhorn.$DOMAIN --set global.cattle.systemDefaultRegistry=$serverIp:5000 --plain-http
 }
 
 ################################# neuvector ################################
 function neuvector () {
   # deploy neuvector with local helm/images
-  echo - deploying neuvector
-  helm upgrade -i neuvector --namespace neuvector /opt/rancher/helm/core-$NEU_VERSION.tgz --create-namespace  --set imagePullSecrets=regsecret --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set manager.svc.type=ClusterIP --set controller.pvc.capacity=500Mi --set registry=localhost:5000 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector.$DOMAIN --set internal.certmanager.enabled=true
+  info "deploying neuvector"
+  helm upgrade -i neuvector --namespace neuvector oci://$serverIp:5000/hauler/core --create-namespace  --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set manager.svc.type=ClusterIP --set controller.pvc.capacity=500Mi --set registry=http://$serverIp:5000 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector.$DOMAIN --set internal.certmanager.enabled=true
 }
 
 ################################# rancher ################################
 function rancher () {
   # deploy rancher with local helm/images
-  echo - deploying rancher
-  helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-$CERT_VERSION.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert/cert-manager-controller --set webhook.image.repository=localhost:5000/cert/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert/cert-manager-ctl 
+  info "deploying rancher"
+  helm upgrade -i cert-manager oci://$serverIp:5000/hauler/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=$serverIp:5000/cert/cert-manager-controller --set webhook.image.repository=$serverIp:5000/cert/cert-manager-webhook --set cainjector.image.repository=$serverIp:5000/cert/cert-manager-cainjector --set startupapicheck.image.repository=$serverIp:5000/cert/cert-manager-ctl 
 
-  helm upgrade -i rancher /opt/rancher/helm/rancher-$RANCHER_VERSION.tgz --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000 --set hostname=rancher.$DOMAIN
+  helm upgrade -i rancher oci://$serverIp:5000/hauler/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=$serverIp:5000/rancher/rancher --set systemDefaultRegistry=$serverIp:5000 --set hostname=rancher.$DOMAIN
 
   echo "   - bootstrap password = \"bootStrapAllTheThings\" "
 }
 
 ################################# validate ################################
 function validate () {
-  echo - showing images
+  info "showing all images"
   kubectl get pods -A -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
 }
 
