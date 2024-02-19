@@ -220,8 +220,8 @@ EOF
 
   # wait for fileserver to come up.
   until [ $(ls -asl /opt/hauler/store-files/*.rpm | wc -l) == 4 ]; do sleep 2; done
-  cd /opt/hauler/store-files
-  createrepo . > /dev/null 2>&1
+
+  createrepo /opt/hauler/store-files > /dev/null 2>&1
  
   # generate an index file
   hauler store info > /opt/hauler/store-files/hauler_index.txt
@@ -341,7 +341,7 @@ EOF
   yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1
   systemctl enable --now rke2-server.service > /dev/null 2>&1
 
-  until [ systemctl is-active -q rke2-server ]; do sleep 2; done
+  until systemctl is-active -q rke2-server; do sleep 2; done
 
   # wait and add link
   echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml PATH=$PATH:/var/lib/rancher/rke2/bin" >> ~/.bashrc
@@ -355,8 +355,8 @@ EOF
   install -m 755 linux-amd64/helm /usr/local/bin || fatal "Failed to install helm to /usr/local/bin"
 
   echo "------------------------------------------------------------------------------------"
-  echo "  Run:"
-  echo "  - $BLUE'curl -sfL http://$serverIp:8080/$0 | bash -s -- worker $serverIp'$NO_COLOR on your worker nodes"
+  echo "  Run on the worker nodes"
+  echo "  - $BLUE'curl -sfL http://$serverIp:8080/$0 | bash -s -- worker $serverIp'$NO_COLOR"
   echo "------------------------------------------------------------------------------------"
 
 }
@@ -378,7 +378,7 @@ gpgcheck=0
 EOF
 
   # clean all the yums
-  yum clean all 
+  yum clean all  > /dev/null 2>&1
 
   # setup RKE2
   mkdir -p /etc/rancher/rke2/
@@ -389,7 +389,8 @@ EOF
 
   # install rke2
   yum install -y rke2-agent rke2-common rke2-selinux > /dev/null 2>&1
-  systemctl enable --now rke2-agent.service
+  systemctl enable --now rke2-agent.service > /dev/null 2>&1
+  info "worker node running"
 }
 
 ################################# flask ################################
