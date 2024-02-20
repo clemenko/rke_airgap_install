@@ -3,28 +3,36 @@ title: How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
 author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 ---
 
-# How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
+# How to Air Gap RKE2, Neuvector, Longhorn, and Rancher with Hauler
+
+![hauler](https://rancherfederal.github.io/hauler-docs/img/rgs-hauler-logo-transparent.png)
 
 ![logp](img/rancher-long-banner.png)
+
+
+**DISCLAIMER - THIS IS NOT MEANT FOR PRODUCTION! - Open a github issue first! - DISCLAIMER**
+---
 
 This guide is very similar to [Simple RKE2, Neuvector, Longhorn, and Rancher Install ](https://github.com/clemenko/rke_install_blog), except in one major way. This guide will provide a strategy for air gapping all the bits needed for RKE2, Longhorn and Rancher. This is just one opinion. We are starting from the idea that there is no container infrastructure available.
 
 Throughout my career there has always been a disconnect between the documentation and the practical implementation. The Kubernetes (k8s) ecosystem is no stranger to this problem. This guide is a simple approach to installing Kubernetes and some REALLY useful tools. We will walk through installing all the following.
 
+- [Hauler](https://rancherfederal.github.io/hauler-docs/) - Airgap Swiss Army Knife
 - [RKE2](https://docs.rke2.io) - Security focused Kubernetes
 - [Rancher](https://www.suse.com/products/suse-rancher/) - Multi-Cluster Kubernetes Management
 - [Longhorn](https://longhorn.io) - Unified storage layer
 - [Neuvector](https://neuvector.com/) - Kubernetes Security Platform
 
-We will need a few tools for this guide. Hopefully everything at handled by my [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) script. For this guide all the commands will be in the script.
+We will need a few tools for this guide. Hopefully everything at handled by my [hauler_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh) script. For this guide all the commands will be in the script.
 
-For those that like videos, [Watch the video](https://youtu.be/IkQJc5-_duo).
+For those that like videos, [Watch the video]().
 
 ---
 
 > **Table of Contents**:
 >
 > * [Whoami](#whoami)
+> * [Goal](#goal)
 > * [Prerequisites](#prerequisites)
 > * [Build](#Build)
 > * [Deploy Control Plane](#deploy-control-plane)
@@ -32,229 +40,339 @@ For those that like videos, [Watch the video](https://youtu.be/IkQJc5-_duo).
 > * [Rancher](#Rancher)
 > * [Longhorn](#Longhorn)
 > * [Neuvector](#Neuvector)
-> * [tl:dr](#tldr)
 > * [Validate Images](#validate-images)
-> * [Dockerfile](#Dockerfile)
 > * [Conclusion](#conclusion)
 
 ---
 
 ## Whoami
 
-Just a geek - Andy Clemenko - @clemenko - andy.clemenko@rancherfederal.com
+Just a geek - Andy Clemenko - @clemenko - clemenko@gmail.com
+
+## Goal
+
+To simplify the steps it takes to airgap AND deploy rke2, Rancher, Longhorn, and NeuVector.
 
 ## Prerequisites
 
-The prerequisites are fairly simple. We need 4 [Rocky](https://rockylinux.org/) Linux servers. Centos or Rhel work just as well. Start with 4 core, 8Gb Ram, and 80Gb hard drive. All the servers will need access to a yum repo server. One of the servers will need access to the internet. The other three should be on the other side of the airgap. The servers can be bare metal or your favorite vm of choice. For the video I am going to use [Harvester](https://www.rancher.com/products/harvester) running on a 1u server. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary.
+The prerequisites are fairly simple. We need 4 [Rocky](https://rockylinux.org/) Linux servers. Centos or Rhel work just as well. Start with 4 core, 8Gb Ram, and 80Gb hard drive. All the servers will need access to a yum repo server. One of the servers will need access to the internet. The other three should be on the other side of the airgap. The servers can be bare metal or your favorite vm of choice. The three, or more, air gapped servers should not have firewalls in between each other. We will need an `ssh` client to connect to the servers. DNS is a great to have but not necessary. Everything will run as `root`.
 
 ![servers](img/servers.jpg)
 
-Before you build take a look at all the files in the repo at [https://github.com/clemenko/rke_airgap_install](https://github.com/clemenko/rke_airgap_install)
-
 ## Build
 
-Because we are moving bits across an air gap we need a server with access to the internet. Let's ssh into the build server to start the download/build process. There are a few tools we will need like [Skopeo](https://github.com/containers/skopeo) and [Helm](https://helm.sh/). We will walk through getting everything needed. We will need root for all three servers. The following instructions are going to be high level. The script [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh) will take care of almost everything. **Keep in mind, the script is designed for Rocky/RHEL based OS's.**
-
-All the steps below are covered in geeky detail in the scripts [build function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L23).
-
-- Set Versions
-- Install skopeo and zstd
-- Mkdir `/opt/rancher`
-- Download RKE2 files
-- Get Helm
-- Add Helm Repos
-- Pull Helm Charts
-- Pull Image Lists
-- Clean Rancher Image List - Remove older versions
-- Skopeo `copy` All Images, Including Registry
-- Compress
-
-There are quite a few steps in building the Tar. One thing to highlight is how the `registry.tar` is built. Unfortuantly `skopeo` does not save it in a format that can be loaded directly into containerd. This is why it is loaded as a one off. The simple procedure for creating `registry.tar` is :
+Here is the cool part of this upgrade. [Hauler](https://rancherfederal.github.io/hauler-docs/) allows the collection, moving, and serving of files across the airgap. [Hauler](https://rancherfederal.github.io/hauler-docs/) dramatically improves the process. Simply get the script from [github](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh). We will run it on the "Build Server" that has access to the internet.
 
 ```bash
-docker pull --platform linux/amd64 registry
-docker save registry -o registry.tar
-```
+# make the directory
+mkdir /opt/hauler
 
-Note the `--platform linux/amd64` is from using Docker on an Apple Silicon Mac.
+# run the build process
+./hauler_all_the_things.sh build
+```
+ 
+The [build function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L42) will collect all the charts, images, and files needed. And then package it all up.  
+Here is an example output:
+
+```text
+[root@internet hauler]# ./hauler_all_the_things.sh build
+[info] checking for hauler / ztsd / jq / helm
+  - installed  ok 
+
+[info] creating hauler manifest
+  - created airgap_hauler.yaml ok 
+
+[info] - hauler store sync
+  - synced ok 
+
+[info] - hauler store save
+  - saved ok 
+
+[info] - compressing all the things
+  - created /opt/hauler_airgap_02_20_24.zst  ok 
+
+---------------------------------------------------------------------------
+    move file to other network...
+    then uncompress with : 
+      yum install -y zstd
+      mkdir /opt/hauler
+      tar -I zstd -vxf hauler_airgap_02_20_24.zst -C /opt/hauler
+---------------------------------------------------------------------------
+```
 
 ## Move the tar
 
-At the time of writing this guide the compressed zst is 6.3G. The output zst is in the `/opt/` directory. Time to move it across the air gap.
+Move `/opt/hauler_airgap_%DATE%.zst` across the air gap. The file is currently 7.4G. We are looking at ways to make it smaller.
 
 ## Deploy Control Plane
 
-At a high level we are going to install RKE2 on the first air gapped node. Let's start with copying the zst to the first node, let's call it `airgap1`. There are some needed packages on all three nodes. This packages as well as come kernel tuning can be found in the [air_gap_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L132) script. We will need to apply the same to all the nodes.
+One of the great features of [Hauler](https://rancherfederal.github.io/hauler-docs/)  is that it can serve a registry server on port `5000` AND a file server on port `8080`. This will give us the opportunity to stream line the deployment process air gapped. 
 
-### Uncompress
+Let's start with copying the zst to the first node, let's call it `airgap1`. The control [control function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L297) will deploy hauler to serve a registry and fileserver. Then install rke2 from RPMs.
 
-Move the `rke2_rancher_longhorn.zst` to `/opt/`. From there we can uncompress it.
-
-```bash
-  yum install -y zstd
-  mkdir /opt/rancher
-  tar -I zstd -vxf rke2_rancher_longhorn.zst -C /opt/rancher
-```
-
-We should now see all the files in the `/opt/rancher` directory.
+Please install zstd before trying to uncompress the zst.
 
 ```bash
-[root@airgap1 opt]# ls -asl rancher/
-total 24
- 0 drwxr-xr-x. 5 root root    84 Nov 30 15:45 .
- 0 drwxr-xr-x. 3 root root    54 Nov 30 15:50 ..
-20 -rwxr-xr-x. 1 root root 18634 Nov 30 15:28 air_gap_all_the_things.sh
- 0 drwxr-xr-x. 3 root root   143 Nov 30 15:45 helm
- 0 drwxr-xr-x. 7 root root    78 Nov 30 15:45 images
- 4 drwxr-xr-x. 2 root root  4096 Nov 30 15:45 rke2_1.24.8
+# install zst
+yum install -y zstd
+
+#m make dir
+mkdir /opt/hauler
+
+# untar to the /opt/hauler dir
+tar -I zstd -vxf hauler_airgap_02_20_24.zst -C /opt/hauler
 ```
 
-Fantastic, let's build the first control node.
+Once uncompressed we are ready install the control node with:
 
-### First Control Plane Node
+```bash
+# get in the right dir
+cd /opt/hauler
 
-With everything uncompressed we can now setup the RKE2 on the same, first, node. The high level steps are as follows:
+# install hauler and the rke2 for the control plane node
+./hauler_all_the_things.sh control
+```
 
-- Add kernel tuning
-- Add packages
-- Add `etcd` user to the host
-- Add RKE2 Configs with the STIG settings
-- Add RKE2 Audit Policy
-- Add Nginx TLS-Passthrough
-- Add Registry Image Locally
-- Install & Start RKE2
-- Setup Kubectl access
-- Setup & Start NFS
-- Deploy Registry `localhost:5000`
-- Load Images into registry
-- Unpack Helm
+Example output:
 
-Of course there is a script [deploy_control function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L195) that gives all the commands.
+```bash
+[root@air1 hauler]# ./hauler_all_the_things.sh control
+[info] setting up hauler
+2:20PM INF loading content from [/opt/hauler/haul.tar.zst] to [store]
+Created symlink /etc/systemd/system/multi-user.target.wants/hauler@registry.service → /etc/systemd/system/hauler@.service.
+ - registry started ok 
+
+Created symlink /etc/systemd/system/multi-user.target.wants/hauler@fileserver.service → /etc/systemd/system/hauler@.service.
+ - fileserver started ok 
+
+[info] updating kernel settings
+[info] installing base packages
+[info] installing rke2
+[info] cluster active
+[info] installing helm
+------------------------------------------------------------------------------------
+  Run:  'source ~/.bashrc' 
+  Run on the worker nodes
+  - ' curl -sfL http://192.168.1.210:8080/./hauler_all_the_things.sh | bash -s -- worker 192.168.1.210 '
+------------------------------------------------------------------------------------
+```
+
+Fantastic, let's check that everything is working.
+
+```bash
+# source the bashrc
+source ~/.bashrc
+```
+
+```bash
+# check for the two hauler serve ports 8080 and 5000
+ss -tln | grep "8080\|5000"
+```
+
+```bash
+# check that pods are coming up
+kubectl get pod -A
+```
+
+One last thing to check is the web interface for the fileserver.  
+Navigate to the IP of the first node on port `8080`.
+
+![fileserver](img/fileserver.jpg)
+
+One "nice to have" is the file named `_hauler_index.txt`. This is the entire listing of what was moved. This is a good way to double check if anything is missing.
+
+If everything looks good then we can proceed to the work nodes.
 
 ## Deploy Workers
 
-Now that we have the first node running with RKE2 we can turn our attention to the worker nodes. The design of this guide is to use NFS to server out all the files to the cluster from the first node. This will same a ton of time on copying files around. We will also use the NFS for the registry storage. Here are the high level steps. On each of the worker nodes.
+Thanks to Hauler we have a simple method for `curl | bash` the script to the nodes. Feel free to check out the [worker function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L365).  
+From the `./hauler_all_the_things.sh control` we were given the command to run on the workers. Note the IP address will be different.
 
-- Add kernel tuning
-- Add packages
-- Mkdir - `mkdir /opt/rancher`
-- Mount First node - `mount $IP:/opt/rancher/`
-- Get Join Token from the Control Plane node
-- Add RKE2 Configs with the STIG settings
-- Add Registry Image Locally
-- Install & Start RKE2 as Agent
+```bash
+curl -sfL http://192.168.1.210:8080/./hauler_all_the_things.sh | bash -s -- worker 192.168.1.210 
+```
 
-Rinse and Repeat. The in depth commands can be found in the [deploy worker function](https://github.com/clemenko/rke_airgap_install/blob/main/air_gap_all_the_things.sh#L317).
+Here is a sample output:
 
-Now that we have the cluster built we can focus our attention to Rancher and Longhorn.
+```text
+[root@air2 ~]# curl -sfL http://192.168.1.210:8080/./hauler_all_the_things.sh | bash -s -- worker 192.168.1.210 
+- deploy worker
+[info] updating kernel settings
+[info] installing base packages
+[info] worker node running
+```
+
+We can validate the node(s) are connect by going to the control plane node and running `kubectl get node`.
+
+```bash
+[root@air ~]# kubectl get node
+NAME   STATUS   ROLES                       AGE   VERSION
+air1    Ready    control-plane,etcd,master   54m   v1.27.10+rke2r1
+air2    Ready    <none>                      17s   v1.27.10+rke2r1
+air3    Ready    <none>                      17s   v1.27.10+rke2r1
+```
+
+Huzzah! We can now focus on deploying the application Longhorn, Rancher, And NeuVector.
 
 ## Rancher
 
-For Rancher we are going to use the Helm Chart we imported. The good news is that everything we need is already loaded. The first chart we need to deploy is `cert-manager`. Cert Manager is used for creating certificates for Rancher. Please pay attention to all the options for the Helm command. We need to make sure we have the correct image locations and chart locations. Thanks to the NFS mount we are sharing the images to all the nodes. This is not meant for production. But it works well for a development/POC environment.
-
-Note that the `hostname=rancher.awesome.sauce` will need to be changed to reflect your domain/DNS/network.
+Thanks again to hauler for support OCI helm charts. Meaning we do not need to "download" anything to the control plane node. Feel free to check out the [Rancher function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L423).  The command is fairly simple. By default the URL for Rancher is `rancher.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
 
 ```bash
-helm upgrade -i cert-manager /opt/rancher/helm/cert-manager-v1.12.2.tgz --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=localhost:5000/cert-manager-controller --set webhook.image.repository=localhost:5000/cert-manager-webhook --set cainjector.image.repository=localhost:5000/cert-manager-cainjector --set startupapicheck.image.repository=localhost:5000/cert-manager-ctl
-
-helm upgrade -i rancher /opt/rancher/helm/rancher-2.7.5.tgz --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=localhost:5000/rancher/rancher --set systemDefaultRegistry=localhost:5000 --set hostname=rancher.awesome.sauce
+# deploy rancher
+./hauler_all_the_things.sh rancher
 ```
 
-And not to disappoint there is a function, `rancher`, in the script to help with the deployment. Check out the [tl:dr](#tldr) section. The script will need to be edited.
+Example output:
 
-```bash
-./air_gap_all_the_things.sh rancher
+```text
+[root@air1 hauler]# ./hauler_all_the_things.sh rancher
+[info] deploying cert-manager
+Release "cert-manager" does not exist. Installing it now.
+Pulled: 192.168.1.210:5000/hauler/cert-manager:v1.14.2
+Digest: sha256:dc037fbd36fac13ece364bdaebf44c46b722adb110ceff53f7572c2d7b8adc37
+NAME: cert-manager
+LAST DEPLOYED: Tue Feb 20 14:29:18 2024
+NAMESPACE: cert-manager
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+cert-manager v1.14.2 has been deployed successfully!
+
+In order to begin issuing certificates, you will need to set up a ClusterIssuer
+or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
+
+More information on the different types of issuers and how to configure them
+can be found in our documentation:
+
+https://cert-manager.io/docs/configuration/
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Ingress resources, take a look at the `ingress-shim`
+documentation:
+
+https://cert-manager.io/docs/usage/ingress/
+[info] deploying rancher
+Release "rancher" does not exist. Installing it now.
+Pulled: 192.168.1.210:5000/hauler/rancher:2.8.2
+Digest: sha256:27e742f51e66e32512509a95523bc9a531ec63f723c730b47685e7678cbc30d3
+NAME: rancher
+LAST DEPLOYED: Tue Feb 20 14:29:33 2024
+NAMESPACE: cattle-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Rancher Server has been installed.
+
+NOTE: Rancher may take several minutes to fully initialize. Please standby while Certificates are being issued, Containers are started and the Ingress rule comes up.
+
+Check out our docs at https://rancher.com/docs/
+
+If you provided your own bootstrap password during installation, browse to https://rancher.awesome.sauce to get started.
+
+If this is the first time you installed Rancher, get started by running this command and clicking the URL it generates:
+
+echo https://rancher.awesome.sauce/dashboard/?setup=$(kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}')
+
+To get just the bootstrap password on its own, run:
+
+kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{ "\n" }}'
+
+Happy Containering!
+   - bootstrap password = "bootStrapAllTheThings" 
 ```
 
 Once deployed you can log into you URL with `https` and start the bootstrapping process. The initial bootstrap password is `bootStrapAllTheThings`.
 
-## Longhorn
-
-Longhorn is a little more simple than Rancher. It is a single Helm Chart. Once again please change the `export DOMAIN=awesome.sauce`.
+We can check to see if everything is coming up with:
 
 ```bash
-helm upgrade -i longhorn /opt/rancher/helm/longhorn-1.5.1.tgz --namespace longhorn-system --create-namespace --set ingress.enabled=true  --set global.cattle.systemDefaultRegistry=localhost:5000 --set ingress.host=longhorn.awesome.sauce
+# check the pods
+kubectl get pod -n cattle-system
 ```
+
+If everything looks good move on to the next application.
+
+## Longhorn
+
+NeuVector is the same as the others.  
+Feel free to check out the [Longhorn function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L409). By default the URL for Longhorn is `longhorn.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
+
+```bash
+# deploy longhorn
+./hauler_all_the_things.sh longhorn
+```
+
+Example output:
+
+```text
+[root@air1 hauler]# ./hauler_all_the_things.sh longhorn
+[info] deploying longhorn
+Release "longhorn" does not exist. Installing it now.
+Pulled: 192.168.1.210:5000/hauler/longhorn:1.6.0
+Digest: sha256:318fe85c5a5d4e4b52b1d4451e313c4239c876af2a3f564474d05cb29ac690e3
+NAME: longhorn
+LAST DEPLOYED: Tue Feb 20 14:27:28 2024
+NAMESPACE: longhorn-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Longhorn is now installed on the cluster!
+
+Please wait a few minutes for other Longhorn components such as CSI deployments, Engine Images, and Instance Managers to be initialized.
+
+Visit our documentation at https://longhorn.io/docs/
+```
+
+We can check to see if everything is coming up with:
+
+```bash
+# check the pods
+kubectl get pod -n longhorn-system
+```
+
+If everything looks good move on to the next application.
 
 ## Neuvector
 
-Along with Longhorn the Neuvector is a simple Helm install. Once again please change the `manager.ingress.host=neuvector.awesome.sauce`.
+NeuVector is the same as the others.  
+Feel free to check out the [NeuVector function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L416). By default the URL for NeuVector is `neuvector.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
 
 ```bash
-helm upgrade -i neuvector /opt/rancher/helm/core-2.6.1.tgz --namespace neuvector --create-namespace  --set imagePullSecrets=regsecret --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set controller.pvc.capacity=500Mi --set registry=localhost:5000 --set tag=5.0.5 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector..awesome.sauce
+# deploy neuvector
+./hauler_all_the_things.sh neuvector
 ```
 
-Again the script will simplify things.
-
-## tl:dr
-
-### Get the Script
-
-We are going to use `curl` to get the script from Github. Keep in mind that the script is always being updated. Again this in the first node that has access to the internet.
+We can check to see if everything is coming up with:
 
 ```bash
-mkdir /opt/rancher
-cd /opt/rancher
-curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/air_gap_all_the_things.sh
-chmod 755 air_gap_all_the_things.sh
+# check the pods
+kubectl get pod -n neuvector
 ```
 
-### Check the Versions
+Example output:
 
-Edit `air_gap_all_the_things.sh` and validate the versions are correct.
-
-### Run the Build
-
-Please be patient as it is pulling 15Gb from the interwebs.
-
-```bash
-./air_gap_all_the_things.sh build
+```text
+[root@air hauler]# ./hauler_all_the_things.sh neuvector
+[info] deploying neuvector
+Release "neuvector" does not exist. Installing it now.
+Pulled: 192.168.1.210:5000/hauler/core:2.7.3
+Digest: sha256:0c8526de3450c418acd4e3e533115ee5a8b3c9f3a9551939fd7223c1d21811ad
+NAME: neuvector
+LAST DEPLOYED: Tue Feb 20 15:42:57 2024
+NAMESPACE: neuvector
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+From outside the cluster, the NeuVector URL is:
+http://neuvector.awesome.sauce
 ```
 
-The result will be all the files under `/opt/rancher/` and the tar that needs to be moved `/opt/rke2_rancher_longhorn.zst`.
-
-### Move the Tar
-
-To the first node.
-
-### Deploy Control Plane
-
-```bash
-./air_gap_all_the_things.sh control
-source ~/.bashrc # for kubectl to work
-```
-
-This will setup RKE2, deploy the registry and start NFS. **Pay attention** to the output of this command. There is a series of commands that will need to run on each of the worker nodes. **NFS MUST be mounted on each worker node.**
-
-### Deploy Workers
-
-```bash
-./air_gap_all_the_things.sh worker
-```
-
-### Update the DOMAIN Variable
-
-```bash
-vi ./air_gap_all_the_things.sh
-```
-
-### Rancher
-
-```bash
-./air_gap_all_the_things.sh rancher
-```
-
-### Longhorn
-
-```bash
-./air_gap_all_the_things.sh longhorn
-```
-
-### Neuvector
-
-```bash
-./air_gap_all_the_things.sh neuvector
-```
+## Bonus - Flask Application
 
 ## Validate Images
 
@@ -263,10 +381,6 @@ As a nice to have here is a command to validate the images are loaded from the l
 ```bash
 kubectl get pods -A -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' |sort | uniq -c
 ```
-
-## Dockerfile
-
-Why yes there is a Dockerfile to run the build phase. Take a look at the [Dockerfile](https://github.com/clemenko/rke_airgap_install/blob/main/Dockerfile) in the repo.
 
 ## Conclusion
 

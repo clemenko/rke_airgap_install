@@ -103,6 +103,9 @@ EOF
   # final sort
   sort -u hauler_temp/rancher-unsorted.txt > hauler_temp/rancher-images.txt
 
+  # kubectl fix
+  echo "rancher/kubectl:v1.20.2" >> hauler_temp/rancher-images.txt
+
   for i in $(cat hauler_temp/rancher-images.txt); do echo "    - name: "$i >> airgap_hauler.yaml; done
 
   rm -rf hauler_temp
@@ -154,7 +157,7 @@ EOF
   echo -n "  - saved"; info_ok
   
   # cleanup
-  rm -rf /opt/hauler/store
+  rm -rf /opt/hauler/store /opt/hauler/airgap_hauler.yaml
 
   # copy hauler binary
   rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
@@ -179,7 +182,6 @@ function hauler_setup () {
 # make sure it is not running
 if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
 
-  cd /opt/hauler
 
   info "setting up hauler"
 
@@ -207,24 +209,26 @@ EOF
   #reload daemon
   systemctl daemon-reload
 
-  # start reg
-  systemctl enable --now hauler@registry || fatal "hauler registry did not start"
-  echo -n " - registry started"; info_ok
-
   # start fileserver
   systemctl enable --now hauler@fileserver || fatal "hauler fileserver did not start"
   echo -n " - fileserver started"; info_ok
 
+  sleep 5
+
+  # start reg
+  systemctl enable --now hauler@registry || fatal "hauler registry did not start"
+  echo -n " - registry started"; info_ok
+
   # install createrepo
   yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
-
+  
   # wait for fileserver to come up.
-  until [ $(ls -asl /opt/hauler/store-files/*.rpm | wc -l) == 4 ]; do sleep 2; done
+  until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
 
   createrepo /opt/hauler/store-files > /dev/null 2>&1
  
   # generate an index file
-  hauler store info > /opt/hauler/store-files/hauler_index.txt
+  hauler store info > /opt/hauler/store-files/_hauler_index.txt
 
 fi
 
@@ -310,7 +314,7 @@ gpgcheck=0
 EOF
 
   # clean all the yums
-  yum clean all 
+  yum clean all  > /dev/null 2>&1
 
   # kernel and package stuff
   base
@@ -335,7 +339,7 @@ EOF
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
 
   # set registry override
-  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  \"$serverIp:5000\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
+  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  $serverIp:5000:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # insall rke2 - stig'd
   yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1
@@ -348,6 +352,10 @@ EOF
   ln -s /var/run/k3s/containerd/containerd.sock /var/run/containerd/containerd.sock
   source ~/.bashrc
 
+  # wait for cluster to be active
+  until [ $(kubectl get node | grep Ready | wc -l) == 1 ]; do sleep 2; done
+  info "cluster active"
+
   # install helm 
   info "installing helm"
   cd /opt/hauler
@@ -355,8 +363,9 @@ EOF
   install -m 755 linux-amd64/helm /usr/local/bin || fatal "Failed to install helm to /usr/local/bin"
 
   echo "------------------------------------------------------------------------------------"
+  echo -e "  Run: $BLUE 'source ~/.bashrc' "$NO_COLOR
   echo "  Run on the worker nodes"
-  echo "  - $BLUE'curl -sfL http://$serverIp:8080/$0 | bash -s -- worker $serverIp'$NO_COLOR"
+  echo -e "  - '$BLUE curl -sfL http://$serverIp:8080/$0 | bash -s -- worker $serverIp $NO_COLOR'"
   echo "------------------------------------------------------------------------------------"
 
 }
@@ -385,7 +394,7 @@ EOF
   echo -e "server: https://$serverIp:9345\ntoken: bootstrapAllTheThings\nwrite-kubeconfig-mode: 0600\n#profile: cis-1.23\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
   
   # set registry override
-  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  $serverIp:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
+  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  \"$serverIp:5000\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # install rke2
   yum install -y rke2-agent rke2-common rke2-selinux > /dev/null 2>&1
@@ -396,13 +405,8 @@ EOF
 ################################# flask ################################
 function flask () {
   # dummy 3 tier app - asked for by a customer. 
-
-  echo "------------------------------------------------------------------"
-  echo " to deploy: "
-  echo "   edit /opt/rancher/images/flask/flask.yaml to the ingress URL."
-  echo "   kubectl apply -f /opt/rancher/images/flask/flask.yaml"
-  echo "------------------------------------------------------------------"
-
+ info "deploy flask app"
+ curl -sfL http://$serverIp:8080/flask.yaml | sed s/localhost/$serverIp/g | kubeectl apply -f -  
 }
 
 ################################# longhorn ################################
@@ -416,16 +420,17 @@ function longhorn () {
 function neuvector () {
   # deploy neuvector with local helm/images
   info "deploying neuvector"
-  helm upgrade -i neuvector --namespace neuvector oci://$serverIp:5000/hauler/core --create-namespace  --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set manager.svc.type=ClusterIP --set controller.pvc.capacity=500Mi --set registry=http://$serverIp:5000 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector.$DOMAIN --set internal.certmanager.enabled=true
+  helm upgrade -i neuvector --namespace neuvector oci://$serverIp:5000/hauler/core --create-namespace  --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set manager.svc.type=ClusterIP --set controller.pvc.capacity=500Mi --set registry=http://$serverIp:5000 --set controller.image.repository=neuvector/controller --set enforcer.image.repository=neuvector/enforcer --set manager.image.repository=neuvector/manager --set cve.updater.image.repository=neuvector/updater --set manager.ingress.host=neuvector.$DOMAIN --set internal.certmanager.enabled=true --plain-http
 }
 
 ################################# rancher ################################
 function rancher () {
   # deploy rancher with local helm/images
-  info "deploying rancher"
-  helm upgrade -i cert-manager oci://$serverIp:5000/hauler/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=$serverIp:5000/cert/cert-manager-controller --set webhook.image.repository=$serverIp:5000/cert/cert-manager-webhook --set cainjector.image.repository=$serverIp:5000/cert/cert-manager-cainjector --set startupapicheck.image.repository=$serverIp:5000/cert/cert-manager-ctl 
+  info "deploying cert-manager"
+  helm upgrade -i cert-manager oci://$serverIp:5000/hauler/cert-manager --version $(curl -sfL http://$serverIp:8080/_hauler_index.txt | grep hauler/cert | awk '{print $2}'| awk -F: '{print $2}') --namespace cert-manager --create-namespace --set installCRDs=true --set image.repository=$serverIp:5000/jetstack/cert-manager-controller --set webhook.image.repository=$serverIp:5000/jetstack/cert-manager-webhook --set cainjector.image.repository=$serverIp:5000/jetstack/cert-manager-cainjector --set startupapicheck.image.repository=$serverIp:5000/jetstack/cert-manager-startupapicheck --plain-http
 
-  helm upgrade -i rancher oci://$serverIp:5000/hauler/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=$serverIp:5000/rancher/rancher --set systemDefaultRegistry=$serverIp:5000 --set hostname=rancher.$DOMAIN
+  info "deploying rancher"
+  helm upgrade -i rancher oci://$serverIp:5000/hauler/rancher --namespace cattle-system --create-namespace --set bootstrapPassword=bootStrapAllTheThings --set replicas=1 --set auditLog.level=2 --set auditLog.destination=hostPath --set useBundledSystemChart=true --set rancherImage=$serverIp:5000/rancher/rancher --set systemDefaultRegistry=$serverIp:5000 --set hostname=rancher.$DOMAIN --plain-http
 
   echo "   - bootstrap password = \"bootStrapAllTheThings\" "
 }
@@ -441,11 +446,12 @@ function usage () {
   echo ""
   echo "-------------------------------------------------"
   echo ""
-  echo -e $YELLOW" Usage: $0 {build | control | worker}"$NO_COLOR
+  echo -e $YELLOW" Script Usage: $0 { build | control | worker }"$NO_COLOR
   echo ""
-  echo " $0 build # download and create the monster TAR "
-  echo " $0 control # deploy on a control plane server"
-  echo " $0 worker # deploy on a worker"
+  echo -e " $0$BLUE build$NO_COLOR # download and create the monster TAR "
+  echo -e " $0$BLUE control$NO_COLOR # deploy on a control plane server"
+  echo -e " $0$BLUE worker$NO_COLOR # deploy on a worker"
+  echo "-------------------------------------------------"
   echo " $0 flask # deploy a 3 tier app"
   echo " $0 neuvector # deploy neuvector"
   echo " $0 longhorn # deploy longhorn"
@@ -454,18 +460,24 @@ function usage () {
   echo ""
   echo "-------------------------------------------------"
   echo ""
-  echo -e $YELLOW"Steps:"$NO_COLOR
+  echo -e $BLUE"Cluster Setup Steps:"$NO_COLOR
   echo -e $GREEN" - UNCLASS - $0 build"$NO_COLOR
+  echo ""
   echo -e $RED" - Move the ZST file across the air gap"$NO_COLOR
+  echo ""
   echo " - Build 3 vms with 4cpu and 8gb of ram"
-  echo " - On 1st node ( Control Plane node ) run:$YELLOW mkdir /opt/hauler && tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"$NO_COLOR
-  echo -e $BLUE" - On 1st node run cd /opt/hauler; $0 control"$NO_COLOR
-  echo " - Wait and watch for errors"
-  echo -e $BLUE" - On 2nd, and 3rd nodes run $0 worker <\$IPADDRESS of CONTROL NODE>"$NO_COLOR
-  echo " - On 1st node install"
-  echo "   - Longhorn : $0 longhorn"
-  echo "   - Rancher : $0 rancher"
-  echo "   - Flask : $0 flask"
+  echo -e "   - On 1st node run:"
+  echo -e "     -$BLUE mkdir /opt/hauler && tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"$NO_COLOR
+  echo -e "     -$BLUE cd /opt/hauler; $0 control"$NO_COLOR
+  echo ""
+  echo -e "   - On 2nd, and 3rd nodes run:"
+  echo -e "      -$BLUE curl -sfL http://$serverIp:8080/hauler_all_the_things.sh | bash -s -- worker $serverIp "$NO_COLOR
+  echo ""
+  echo " - Application Setup from 1st node install"
+  echo -e "   - Longhorn : $0$BLUE longhorn"$NO_COLOR
+  echo -e "   - Rancher : $0$BLUE rancher"$NO_COLOR
+  echo -e "   - NeuVector : $0$BLUE neuvector"$NO_COLOR
+  echo -e "   - Flask : $0$BLUE flask"$NO_COLOR
   echo ""
   echo "-------------------------------------------------"
   echo ""
@@ -483,4 +495,3 @@ case "$1" in
         validate) validate;;
         *) usage;;
 esac
-
