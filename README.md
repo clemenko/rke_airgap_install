@@ -5,7 +5,7 @@ author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
 
 # How to Air Gap RKE2, Neuvector, Longhorn, and Rancher with Hauler
 
-![hauler](https://rancherfederal.github.io/hauler-docs/img/rgs-hauler-logo-transparent.png)
+![hauler](img/hauler.png)
 
 ![logp](img/rancher-long-banner.png)
 
