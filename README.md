@@ -1,9 +1,9 @@
 ---
-title: How to Air Gap RKE2, Neuvector, Longhorn, and Rancher
-author: Andy Clemenko, @clemenko, andy.clemenko@rancherfederal.com
+title: Use Hauler to Air Gap the Rancher Stack
+author: Andy Clemenko, @clemenko, clemenko@gmail.com
 ---
 
-# How to Air Gap RKE2, Neuvector, Longhorn, and Rancher with Hauler
+# Use Hauler to Air Gap the Rancher Stack
 
 ![hauler](https://rancherfederal.github.io/hauler-docs/img/rgs-hauler-logo-transparent.png)
 
