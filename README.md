@@ -67,6 +67,15 @@ Here is the cool part of this upgrade. [Hauler](https://rancherfederal.github.io
 # make the directory
 mkdir /opt/hauler
 
+# change dir
+cd /opt/hauler
+
+# get script
+curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh 
+
+# make it executable
+chmod 755 hauler_all_the_things.sh
+
 # run the build process
 ./hauler_all_the_things.sh build
 ```
@@ -108,7 +117,7 @@ Move `/opt/hauler_airgap_%DATE%.zst` across the air gap. The file is currently 7
 
 One of the great features of [Hauler](https://rancherfederal.github.io/hauler-docs/)  is that it can serve a registry server on port `5000` AND a file server on port `8080`. This will give us the opportunity to stream line the deployment process air gapped. 
 
-Let's start with copying the zst to the first node, let's call it `airgap1`. The control [control function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L297) will deploy hauler to serve a registry and fileserver. Then install rke2 from RPMs.
+Let's start with copying the zst to the first node, let's call it `airgap1`. The control [control function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L301) will deploy hauler to serve a registry and fileserver. Then install rke2 from RPMs.
 
 Please install zstd before trying to uncompress the zst.
 
@@ -185,7 +194,7 @@ If everything looks good then we can proceed to the work nodes.
 
 ## Deploy Workers
 
-Thanks to Hauler we have a simple method for `curl | bash` the script to the nodes. Feel free to check out the [worker function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L365).  
+Thanks to Hauler we have a simple method for `curl | bash` the script to the nodes. Feel free to check out the [worker function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L374).  
 From the `./hauler_all_the_things.sh control` we were given the command to run on the workers. Note the IP address will be different.
 
 ```bash
@@ -216,7 +225,7 @@ Huzzah! We can now focus on deploying the application Longhorn, Rancher, And Neu
 
 ## Rancher
 
-Thanks again to hauler for support OCI helm charts. Meaning we do not need to "download" anything to the control plane node. Feel free to check out the [Rancher function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L423).  The command is fairly simple. By default the URL for Rancher is `rancher.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
+Thanks again to hauler for support OCI helm charts. Meaning we do not need to "download" anything to the control plane node. Feel free to check out the [Rancher function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L427).  The command is fairly simple. By default the URL for Rancher is `rancher.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
 
 ```bash
 # deploy rancher
@@ -298,7 +307,7 @@ If everything looks good move on to the next application.
 ## Longhorn
 
 NeuVector is the same as the others.  
-Feel free to check out the [Longhorn function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L409). By default the URL for Longhorn is `longhorn.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
+Feel free to check out the [Longhorn function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L413). By default the URL for Longhorn is `longhorn.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
 
 ```bash
 # deploy longhorn
@@ -339,7 +348,7 @@ If everything looks good move on to the next application.
 ## Neuvector
 
 NeuVector is the same as the others.  
-Feel free to check out the [NeuVector function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L416). By default the URL for NeuVector is `neuvector.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
+Feel free to check out the [NeuVector function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L420). By default the URL for NeuVector is `neuvector.awesome.sauce`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
 
 ```bash
 # deploy neuvector
@@ -374,6 +383,15 @@ http://neuvector.awesome.sauce
 
 ## Bonus - Flask Application
 
+This is a simple 3 tier web app. Feel free to check out the [flask function](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L406). This is going to `curl` the fileserver, change a few variables, and the `kubectl apply`. To change the domain. Edit the script on [line 13](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh#L13) and change the `DOMAIN` there.
+
+```bash
+# deploy flask
+./hauler_all_the_things.sh flask
+```
+
+The flask app deploys to `flask.awesome.sauce` if you are curious.
+
 ## Validate Images
 
 As a nice to have here is a command to validate the images are loaded from the local registry. Note that some of the images are pre-loaded and will look like they were loaded from the internet.
@@ -384,8 +402,11 @@ kubectl get pods -A -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '
 
 ## Conclusion
 
-At this point we really good foundation for installing RKE2, Neuvector, Longhorn, and Rancher air gapped. The script is meant to be readable if the process needs to be broken down. Case in point if there a registry available internally then load the images there. The Helm commands will need to be changed to point to that registry.
+**DISCLAIMER - THIS IS NOT MEANT FOR PRODUCTION! - Open a github issue first! - DISCLAIMER**
+---
 
-If there are any issues, please feel free to reach out.
+Thanks to Hauler, we have a great foundation for installing RKE2, Neuvector, Longhorn, and Rancher air gapped. Keep in mind that this script is inteded for Proofs of Concepts and testing!. Please reach out to have a deeper conversation about what a PRODUCTION system looks like in your environment.
+
+Oh and subscribe!
 
 ![success](img/success.jpg)

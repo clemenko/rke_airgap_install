@@ -406,7 +406,7 @@ EOF
 function flask () {
   # dummy 3 tier app - asked for by a customer. 
  info "deploy flask app"
- curl -sfL http://$serverIp:8080/flask.yaml | sed s/localhost/$serverIp/g | kubeectl apply -f -  
+ curl -sfL http://$serverIp:8080/flask.yaml | sed -e s/localhost/$serverIp/g -e s/XXX/$DOMAIN/g | kubeectl apply -f -  
 }
 
 ################################# longhorn ################################
