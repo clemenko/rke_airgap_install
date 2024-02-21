@@ -292,7 +292,7 @@ EOF
 sysctl -p > /dev/null 2>&1
 
   info "installing base packages"
-  yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1
+  yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1 || fatal "packages didn't install"
   systemctl enable --now iscsid > /dev/null 2>&1
   echo -e "[keyfile]\nunmanaged-devices=interface-name:cali*;interface-name:flannel*" > /etc/NetworkManager/conf.d/rke2-canal.conf
 }
@@ -342,8 +342,8 @@ EOF
   echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  $serverIp:5000:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # insall rke2 - stig'd
-  yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1
-  systemctl enable --now rke2-server.service > /dev/null 2>&1
+  yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1 || fatal "yum install rke2 packages didn't work. check the hauler fileserver service."
+  systemctl enable --now rke2-server.service > /dev/null 2>&1 || fatal "rke2-server didn't start"
 
   until systemctl is-active -q rke2-server; do sleep 2; done
 
@@ -397,8 +397,8 @@ EOF
   echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  \"$serverIp:5000\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # install rke2
-  yum install -y rke2-agent rke2-common rke2-selinux > /dev/null 2>&1
-  systemctl enable --now rke2-agent.service > /dev/null 2>&1
+  yum install -y rke2-agent rke2-common rke2-selinux > /dev/null 2>&1 || fatal "packages didn't install"
+  systemctl enable --now rke2-agent.service > /dev/null 2>&1 || fatal "rke2-agent didn't start"
   info "worker node running"
 }
 
