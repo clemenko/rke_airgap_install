@@ -25,7 +25,7 @@ Throughout my career there has always been a disconnect between the documentatio
 
 We will need a few tools for this guide. Hopefully everything at handled by my [hauler_all_the_things.sh](https://github.com/clemenko/rke_airgap_install/blob/main/hauler_all_the_things.sh) script. For this guide all the commands will be in the script.
 
-For those that like videos, [Watch the video]().
+For those that like videos, https://youtu.be/Wu6oWNZmVK4.
 
 ---
 
