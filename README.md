@@ -5,7 +5,7 @@ author: Andy Clemenko, @clemenko, clemenko@gmail.com
 
 # Use Hauler to Air Gap the Rancher Stack
 
-![hauler](https://github.com/rancherfederal/hauler/raw/main/static/rgs-hauler-logo.png)
+![hauler](img/old_logo.jpg)
 
 ![logp](img/rancher-long-banner.png)
 

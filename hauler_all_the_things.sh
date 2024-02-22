@@ -24,8 +24,8 @@ export NO_COLOR='\x1b[0m'
 
 # set functions for debugging/logging
 function info { echo -e "$GREEN[info]$NO_COLOR $1" ;  }
-function warn { echo -e "$YELLOW[warn]$NO_COLOR $0: $1" ; }
-function fatal { echo -e "$RED[error]$NO_COLOR $0: $1" ; exit 1 ; }
+function warn { echo -e "$YELLOW[warn]$NO_COLOR $1" ; }
+function fatal { echo -e "$RED[error]$NO_COLOR $1" ; exit 1 ; }
 function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 
 #export PATH=$PATH:/usr/local/bin
@@ -42,10 +42,10 @@ export serverIp=${server:-$(hostname -I | awk '{ print $1 }')}
 function build () {
 
   info "checking for hauler / ztsd / jq / helm"
-  command -v hauler >/dev/null 2>&1 || { warn "hauler was not found"; curl -sfL https://get.hauler.dev | bash > /dev/null 2>&1; }
-  yum list installed zstd >/dev/null 2>&1 || { warn "ztsd was not found"; yum install zstd -y> /dev/null 2>&1; }
-  command -v jq >/dev/null 2>&1 || { warn "jq was not found"; yum install -y epel-release ; yum install -y jq > /dev/null 2>&1; }
-  command -v helm >/dev/null 2>&1 || { warn "helm was not found"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1; } 
+  command -v hauler >/dev/null 2>&1 || { warn "hauler not found, installing"; curl -sfL https://get.hauler.dev | bash > /dev/null 2>&1; }
+  command -vyum list installed zstd >/dev/null 2>&1 || { warn "zstd not found, installing"; yum install zstd -y> /dev/null 2>&1; }
+  command -v jq >/dev/null 2>&1 || { warn "jq not found, installing"; yum install -y epel-release ; yum install -y jq > /dev/null 2>&1; }
+  command -v helm >/dev/null 2>&1 || { warn "helm not found, installing"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1; } 
   echo -n "  - installed "; info_ok
 
   cd /opt/hauler
@@ -148,11 +148,12 @@ EOF
 
   echo -n "  - created airgap_hauler.yaml"; info_ok
 
-  info "- hauler store sync"
-  hauler store sync -f /opt/hauler/airgap_hauler.yaml > /dev/null 2>&1 || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
+  
+  warn "- hauler store sync - will take some time..."
+  hauler store sync -f /opt/hauler/airgap_hauler.yaml || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
   echo -n "  - synced"; info_ok
 
-  info "- hauler store save"
+  warn "- hauler store save - will take some time..."
   hauler store save -f /opt/hauler/haul.tar.zst > /dev/null 2>&1 || { fatal "hauler failed to save - run manually : $BLUE hauler store save -f /opt/hauler/haul.tar.zst $NO_COLOR" ; }
   echo -n "  - saved"; info_ok
   
@@ -162,7 +163,7 @@ EOF
   # copy hauler binary
   rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
 
-  info "- compressing all the things"
+  warn "- compressing all the things - will take a minute"
   tar -I zstd -vcf /opt/hauler_airgap_$(date '+%m_%d_%y').zst $(ls) > /dev/null 2>&1
   echo -n "  - created /opt/hauler_airgap_$(date '+%m_%d_%y').zst "; info_ok
 
@@ -172,6 +173,7 @@ EOF
   echo -e "      yum install -y zstd"
   echo -e "      mkdir /opt/hauler"
   echo -e "      tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"
+  echo -e "      $0 control"
   echo -e "---------------------------------------------------------------------------"
 
 }
@@ -220,7 +222,7 @@ EOF
   echo -n " - registry started"; info_ok
 
   # install createrepo
-  yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
+  yum install -y createrepo  > /dev/null 2>&1 || fatal "createrepo was not installed, please install"
   
   # wait for fileserver to come up.
   until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
