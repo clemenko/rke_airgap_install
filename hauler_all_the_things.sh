@@ -31,7 +31,7 @@ function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 #export PATH=$PATH:/usr/local/bin
 
 # el version
-export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]")
+if which rpm; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" >/dev/null 2>&1 ) ; fi
 
 # check for root
 if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
@@ -188,7 +188,7 @@ if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
   info "setting up hauler"
 
   # install
-  install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin"
+  if [ ! -f /usr/local/bin/hauler ]; then  install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin" ; fi
 
   # load
   hauler store load /opt/hauler/haul.tar.zst || fatal "Failed to load hauler store"
@@ -489,6 +489,7 @@ case "$1" in
         build ) build;;
         control) deploy_control;;
         worker) deploy_worker;;
+        hauler_setup) hauler_setup;;
         neuvector) neuvector;;
         longhorn) longhorn;;
         rancher) rancher;;
