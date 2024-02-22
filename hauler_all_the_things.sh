@@ -144,6 +144,7 @@ spec:
     - path: https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r .tag_name)-linux-amd64.tar.gz
     - path: https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/flask.yaml
     - path: https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh
+  # - path: https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.3-x86_64-dvd.iso
 EOF
 
   echo -n "  - created airgap_hauler.yaml"; info_ok
