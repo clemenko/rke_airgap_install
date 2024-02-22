@@ -232,6 +232,10 @@ EOF
   # generate an index file
   hauler store info > /opt/hauler/store-files/_hauler_index.txt
 
+  # add dvd iso
+  # mkdir -p /opt/hauler/store-files/dvd
+  # mount -o loop Rocky-8.9-x86_64-dvd1.iso /opt/store-files/dvd
+
 fi
 
 }
