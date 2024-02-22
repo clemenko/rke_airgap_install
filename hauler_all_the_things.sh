@@ -298,9 +298,28 @@ EOF
 sysctl -p > /dev/null 2>&1
 
   info "installing base packages"
-  yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1 || fatal "packages didn't install"
+  yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1 || fatal "iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils packages didn't install"
   systemctl enable --now iscsid > /dev/null 2>&1
   echo -e "[keyfile]\nunmanaged-devices=interface-name:cali*;interface-name:flannel*" > /etc/NetworkManager/conf.d/rke2-canal.conf
+
+  info "adding yum repo"
+    # add repo 
+cat << EOF > /etc/yum.repos.d/hauler.repo
+[hauler]
+name=Hauler Air Gap Server
+baseurl=http://$serverIp:8080
+enabled=1
+gpgcheck=0
+#[rocky-dvd]
+#name=Rocky DVD
+#baseurl=http://$serverIp:8080/dvd/BaseOS/
+#enabled=1
+#gpgcheck=0
+EOF
+
+  # clean all the yums
+  yum clean all  > /dev/null 2>&1
+
 }
 
 ################################# deploy control ################################
@@ -309,18 +328,6 @@ function deploy_control () {
 
   # set up hauler services
   hauler_setup
-
-  # add repo 
-cat << EOF > /etc/yum.repos.d/hauler.repo
-[hauler]
-name=Hauler Air Gap Server
-baseurl=http://$serverIp:8080
-enabled=1
-gpgcheck=0
-EOF
-
-  # clean all the yums
-  yum clean all  > /dev/null 2>&1
 
   # kernel and package stuff
   base
@@ -382,18 +389,6 @@ function deploy_worker () {
 
   # base bits
   base
-
-  # add repo 
-cat << EOF > /etc/yum.repos.d/hauler.repo
-[hauler]
-name=Hauler Air Gap Server
-baseurl=http://$serverIp:8080
-enabled=1
-gpgcheck=0
-EOF
-
-  # clean all the yums
-  yum clean all  > /dev/null 2>&1
 
   # setup RKE2
   mkdir -p /etc/rancher/rke2/
