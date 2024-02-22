@@ -23,10 +23,10 @@ export YELLOW='\x1b[33m'
 export NO_COLOR='\x1b[0m'
 
 # set functions for debugging/logging
-function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" && echo ; }
 function info { echo -e "$GREEN[info]$NO_COLOR $1" ;  }
 function warn { echo -e "$YELLOW[warn]$NO_COLOR $0: $1" ; }
 function fatal { echo -e "$RED[error]$NO_COLOR $0: $1" ; exit 1 ; }
+function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 
 #export PATH=$PATH:/usr/local/bin
 
@@ -34,7 +34,7 @@ function fatal { echo -e "$RED[error]$NO_COLOR $0: $1" ; exit 1 ; }
 export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]")
 
 # check for root
-if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; exit; fi
+if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
 
 export serverIp=${server:-$(hostname -I | awk '{ print $1 }')}
 
