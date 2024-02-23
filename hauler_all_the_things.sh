@@ -318,7 +318,7 @@ sysctl -p > /dev/null 2>&1
 
   info "adding yum repo"
     # add repo 
-  curl -sfL http://$serverIP:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo
+  curl -sfL http://$serverIp:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo
 
   # clean all the yums
   yum clean all  > /dev/null 2>&1
