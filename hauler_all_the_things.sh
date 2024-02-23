@@ -319,19 +319,8 @@ sysctl -p > /dev/null 2>&1
 
   info "adding yum repo"
     # add repo 
-cat << EOF > /etc/yum.repos.d/hauler.repo
-[hauler]
-name=Hauler Air Gap Server
-baseurl=http://$serverIp:8080
-enabled=1
-gpgcheck=0
-#[rocky-dvd]
-#name=Rocky DVD
-#baseurl=http://$serverIp:8080/dvd/BaseOS/
-#enabled=1
-#gpgcheck=0
-EOF
-
+  curl -sfL http://$serverIP:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo
+  
   # clean all the yums
   yum clean all  > /dev/null 2>&1
 
