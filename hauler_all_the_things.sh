@@ -158,7 +158,7 @@ EOF
   echo -n "  - saved"; info_ok
   
   # cleanup
-  rm -rf /opt/hauler/store /opt/hauler/airgap_hauler.yaml
+  rm -rf /opt/hauler/store
 
   # copy hauler binary
   rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
@@ -235,6 +235,21 @@ EOF
   # add dvd iso
   # mkdir -p /opt/hauler/store-files/dvd
   # mount -o loop Rocky-8.9-x86_64-dvd1.iso /opt/store-files/dvd
+
+  # create yum repo file
+  cat << EOF > /opt/hauler/store-files/hauler.repo
+[hauler]
+name=Hauler Air Gap Server
+baseurl=http://$serverIp:8080
+enabled=1
+gpgcheck=0
+#[rocky-dvd]
+#name=Rocky DVD
+#baseurl=http://$serverIp:8080/dvd/BaseOS/
+#enabled=1
+#gpgcheck=0
+EOF
+
 
 fi
 
