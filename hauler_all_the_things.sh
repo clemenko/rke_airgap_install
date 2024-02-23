@@ -250,7 +250,6 @@ gpgcheck=0
 #gpgcheck=0
 EOF
 
-
 fi
 
 }
@@ -320,7 +319,7 @@ sysctl -p > /dev/null 2>&1
   info "adding yum repo"
     # add repo 
   curl -sfL http://$serverIP:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo
-  
+
   # clean all the yums
   yum clean all  > /dev/null 2>&1
 
