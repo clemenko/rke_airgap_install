@@ -31,7 +31,7 @@ function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 #export PATH=$PATH:/usr/local/bin
 
 # el version
-if which rpm; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" >/dev/null 2>&1 ) ; fi
+if which rpm > /dev/null 2>&1 ; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" ) ; fi
 
 # check for root
 if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
@@ -43,8 +43,8 @@ function build () {
 
   info "checking for hauler / ztsd / jq / helm"
   command -v hauler >/dev/null 2>&1 || { warn "hauler not found, installing"; curl -sfL https://get.hauler.dev | bash > /dev/null 2>&1; }
-  command -v yum list installed zstd >/dev/null 2>&1 || { warn "zstd not found, installing"; yum install zstd -y> /dev/null 2>&1; }
-  command -v jq >/dev/null 2>&1 || { warn "jq not found, installing"; yum install -y epel-release ; yum install -y jq > /dev/null 2>&1; }
+  yum list installed zstd > /dev/null 2>&1 || { warn "zstd not found, installing"; yum install zstd -y > /dev/null 2>&1; }
+  command -v jq >/dev/null 2>&1 || { warn "jq not found, installing"; yum install -y epel-release > /dev/null 2>&1 ; yum install -y jq > /dev/null 2>&1; }
   command -v helm >/dev/null 2>&1 || { warn "helm not found, installing"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1; } 
   echo -n "  - installed "; info_ok
 
@@ -221,13 +221,8 @@ EOF
   systemctl enable --now hauler@registry || fatal "hauler registry did not start"
   echo -n " - registry started"; info_ok
 
-  # install createrepo
-  yum install -y createrepo  > /dev/null 2>&1 || fatal "createrepo was not installed, please install"
-  
   # wait for fileserver to come up.
   until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
-
-  createrepo /opt/hauler/store-files > /dev/null 2>&1
  
   # generate an index file
   hauler store info > /opt/hauler/store-files/_hauler_index.txt
@@ -249,6 +244,12 @@ gpgcheck=0
 #enabled=1
 #gpgcheck=0
 EOF
+
+  # install createrepo
+  yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
+
+  # create repo for rancher rpms
+  createrepo /opt/hauler/store-files > /dev/null 2>&1
 
 fi
 
