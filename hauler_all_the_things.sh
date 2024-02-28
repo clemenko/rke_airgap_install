@@ -312,6 +312,16 @@ fs.inotify.max_user_watches=1048576
 EOF
 sysctl -p > /dev/null 2>&1
 
+  # disable firewalld
+  if yum list installed firewalld > /dev/null 2>&1; then 
+    yum remove -y firewalld > /dev/null 2>&1
+    warn "firewalld was removed"
+  else
+    info "firewalld not installed"
+  fi
+
+  fatal "firewalld could now be disabled"
+
   info "installing base packages"
   yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1 || fatal "iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils packages didn't install"
   systemctl enable --now iscsid > /dev/null 2>&1
