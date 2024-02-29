@@ -28,7 +28,7 @@ function warn { echo -e "$YELLOW[warn]$NO_COLOR $1" ; }
 function fatal { echo -e "$RED[error]$NO_COLOR $1" ; exit 1 ; }
 function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 
-#export PATH=$PATH:/usr/local/bin
+export PATH=$PATH:/usr/local/bin
 
 # el version
 if which rpm > /dev/null 2>&1 ; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" ) ; fi
