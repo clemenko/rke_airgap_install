@@ -223,7 +223,7 @@ EOF
   # wait for fileserver to come up.
   until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
  
-  until hauler store info; do sleep 5; done 
+  until hauler store info > /dev/null 2>&1; do sleep 5; done 
 
   # generate an index file
   hauler store info > /opt/hauler/store-files/_hauler_index.txt || fatal "hauler store is having issues - check /opt/hauler/store-files/_hauler_index.txt"
