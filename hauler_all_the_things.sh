@@ -222,12 +222,11 @@ EOF
 
   # wait for fileserver to come up.
   until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
-  until [[ "$(curl -sL -o /dev/null -w '%{http_code}' http://$serverIp:8080)" == "200" ]]; do sleep 2; done
-
-  sleep 30
+ 
+  until hauler store info; do sleep 5; done 
 
   # generate an index file
-  hauler store info > /opt/hauler/store-files/_hauler_index.txt
+  hauler store info > /opt/hauler/store-files/_hauler_index.txt || fatal "hauler store is having issues - check /opt/hauler/store-files/_hauler_index.txt"
 
   # add dvd iso
   # mkdir -p /opt/hauler/store-files/dvd
