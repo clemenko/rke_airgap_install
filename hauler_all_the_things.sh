@@ -152,12 +152,13 @@ EOF
   hauler store sync -f /opt/hauler/airgap_hauler.yaml || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
   echo -n "  - synced"; info_ok
 
-  warn "- hauler store save - will take some time..."
-  hauler store save -f /opt/hauler/haul.tar.zst > /dev/null 2>&1 || { fatal "hauler failed to save - run manually : $BLUE hauler store save -f /opt/hauler/haul.tar.zst $NO_COLOR" ; }
-  echo -n "  - saved"; info_ok
+#  skipping save since we are just taring it all anyway
+#  warn "- hauler store save - will take some time..."
+#  hauler store save -f /opt/hauler/haul.tar.zst > /dev/null 2>&1 || { fatal "hauler failed to save - run manually : $BLUE hauler store save -f /opt/hauler/haul.tar.zst $NO_COLOR" ; }
+#  echo -n "  - saved"; info_ok
   
   # cleanup
-  rm -rf /opt/hauler/store
+#  rm -rf /opt/hauler/store
 
   # copy hauler binary
   rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
@@ -169,8 +170,7 @@ EOF
   echo -e "---------------------------------------------------------------------------"
   echo -e $BLUE"    move file to other network..."
   echo -e $YELLOW"    then uncompress with : "$NO_COLOR
-  echo -e "      yum install -y zstd"
-  echo -e "      mkdir /opt/hauler"
+  echo -e "      mkdir /opt/hauler && yum install -y zstd"
   echo -e "      tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"
   echo -e "      $0 control"
   echo -e "---------------------------------------------------------------------------"
@@ -190,7 +190,7 @@ if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
   if [ ! -f /usr/local/bin/hauler ]; then  install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin" ; fi
 
   # load
-  hauler store load /opt/hauler/haul.tar.zst || fatal "Failed to load hauler store"
+#  hauler store load /opt/hauler/haul.tar.zst || fatal "Failed to load hauler store"
 
   # add systemd file
 cat << EOF > /etc/systemd/system/hauler@.service
