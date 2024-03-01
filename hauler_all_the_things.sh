@@ -46,7 +46,6 @@ function build () {
   yum list installed zstd > /dev/null 2>&1 || { warn "zstd not found, installing"; yum install zstd -y > /dev/null 2>&1; }
   command -v jq >/dev/null 2>&1 || { warn "jq not found, installing"; yum install -y epel-release > /dev/null 2>&1 ; yum install -y jq > /dev/null 2>&1; }
   command -v helm >/dev/null 2>&1 || { warn "helm not found, installing"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1; } 
-  echo -n "  - installed "; info_ok
 
   cd /opt/hauler
 
@@ -223,7 +222,8 @@ EOF
 
   # wait for fileserver to come up.
   until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
- 
+  until [[ "$(curl -sL -o /dev/null -w '%{http_code}' http://$serverIp:8080)" == "200" ]]; do echo -e -n .; sleep 1; done
+
   # generate an index file
   hauler store info > /opt/hauler/store-files/_hauler_index.txt
 
