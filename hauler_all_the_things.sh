@@ -224,7 +224,7 @@ EOF
   until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
   until [[ "$(curl -sL -o /dev/null -w '%{http_code}' http://$serverIp:8080)" == "200" ]]; do sleep 2; done
 
-  sleep 10
+  sleep 30
 
   # generate an index file
   hauler store info > /opt/hauler/store-files/_hauler_index.txt
@@ -316,13 +316,11 @@ sysctl -p > /dev/null 2>&1
 
   # disable firewalld
   if yum list installed firewalld > /dev/null 2>&1; then 
-    yum remove -y firewalld > /dev/null 2>&1
+    yum remove -y firewalld > /dev/null 2>&1 || fatal "firewalld could not be disabled"
     warn "firewalld was removed"
   else
     info "firewalld not installed"
   fi
-
-  fatal "firewalld could now be disabled"
 
   info "installing base packages"
   yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1 || fatal "iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils packages didn't install"
