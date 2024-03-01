@@ -53,7 +53,8 @@ function build () {
   # versions
   export RKE_VERSION=$(curl -s https://update.rke2.io/v1-release/channels | jq -r '.data[] | select(.id=="stable") | .latest' | awk -F"+" '{print $1}'| sed 's/v//')
   export CERT_VERSION=$(curl -s https://api.github.com/repos/cert-manager/cert-manager/releases/latest | jq -r .tag_name)
-  export RANCHER_VERSION=$(curl -s https://update.rancher.io/v1-release/channels | jq -r '.data[] | select(.id=="latest") .latest' | awk -F"+" '{print $1}'| sed 's/v//')
+  export RANCHER_VERSION=$(curl -s https://api.github.com/repos/rancher/rancher/releases/latest | jq -r .tag_name)
+    # possible curl -s https://update.rancher.io/v1-release/channels | jq -r '.data[] | select(.id=="latest") .latest' | awk -F"+" '{print $1}'| sed 's/v//'
   export LONGHORN_VERSION=$(curl -s https://api.github.com/repos/longhorn/longhorn/releases/latest | jq -r .tag_name)
   export NEU_VERSION=$(curl -s https://api.github.com/repos/neuvector/neuvector-helm/releases/latest | jq -r .tag_name)
 
@@ -211,14 +212,16 @@ EOF
   systemctl daemon-reload
 
   # start fileserver
-  systemctl enable --now hauler@fileserver || fatal "hauler fileserver did not start"
+  systemctl enable --now hauler@fileserver > /dev/null 2>&1 || fatal "hauler fileserver did not start"
   echo -n " - fileserver started"; info_ok
 
   sleep 5
 
   # start reg
-  systemctl enable --now hauler@registry || fatal "hauler registry did not start"
+  systemctl enable --now hauler@registry > /dev/null 2>&1 || fatal "hauler registry did not start"
   echo -n " - registry started"; info_ok
+
+  sleep 5
 
   # wait for fileserver to come up.
   until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
