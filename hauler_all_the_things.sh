@@ -221,7 +221,7 @@ EOF
   echo -n " - registry started"; info_ok
 
   # wait for fileserver to come up.
-  until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
+  #until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
   until [[ "$(curl -sL -o /dev/null -w '%{http_code}' http://$serverIp:8080)" == "200" ]]; do echo -e -n .; sleep 1; done
 
   # generate an index file
