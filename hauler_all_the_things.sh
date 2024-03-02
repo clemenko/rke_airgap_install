@@ -165,7 +165,7 @@ EOF
   rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
 
   warn "- compressing all the things - will take a minute"
-  tar -I zstd -vcf /opt/hauler_airgap_$(date '+%m_%d_%y').zst $(ls) > /dev/null 2>&1
+  tar -I zstd -cf /opt/hauler_airgap_$(date '+%m_%d_%y').zst $(ls) > /dev/null 2>&1
   echo -n "  - created /opt/hauler_airgap_$(date '+%m_%d_%y').zst "; info_ok
 
   echo -e "---------------------------------------------------------------------------"
