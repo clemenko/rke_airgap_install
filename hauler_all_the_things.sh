@@ -154,13 +154,11 @@ EOF
   echo -n "  - synced"; info_ok
 
 #  skipping save since we are just taring it all anyway
+#  we are moving store instead of haul.tar.gz
 #  warn "- hauler store save - will take some time..."
 #  hauler store save -f /opt/hauler/haul.tar.zst > /dev/null 2>&1 || { fatal "hauler failed to save - run manually : $BLUE hauler store save -f /opt/hauler/haul.tar.zst $NO_COLOR" ; }
 #  echo -n "  - saved"; info_ok
   
-  # cleanup
-#  rm -rf /opt/hauler/store
-
   # copy hauler binary
   rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
 
@@ -242,12 +240,19 @@ name=Hauler Air Gap Server
 baseurl=http://$serverIp:8080
 enabled=1
 gpgcheck=0
-#[rocky-dvd]
-#name=Rocky DVD
+EOF
+
+# add for dvd support
+#[rocky-dvd-base]
+#name=Rocky DVD BaseOS
 #baseurl=http://$serverIp:8080/dvd/BaseOS/
 #enabled=1
 #gpgcheck=0
-EOF
+#[rocky-dvd-app]
+#name=Rocky DVD AppStream
+#baseurl=http://$serverIp:8080/dvd/AppStream/
+#enabled=1
+#gpgcheck=0
 
   # install createrepo
   yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
@@ -499,7 +504,7 @@ case "$1" in
         build ) build;;
         control) deploy_control;;
         worker) deploy_worker;;
-        hauler_setup) hauler_setup;;
+        serve) hauler_setup;;
         neuvector) neuvector;;
         longhorn) longhorn;;
         rancher) rancher;;
