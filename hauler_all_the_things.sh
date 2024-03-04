@@ -78,9 +78,6 @@ metadata:
   # hauler.dev/registry: <registry>
 spec:       
   images:
-    - name: docker.io/redis:latest
-    - name: docker.io/mongo:latest
-    - name: docker.io/clemenko/flask_simple:latest
 EOF
 
   for i in $(helm template jetstack/cert-manager --version $CERT_VERSION | awk '$1 ~ /image:/ {print $2}' | sed 's/\"//g'); do echo "    - name: "$i >> airgap_hauler.yaml; done
@@ -142,7 +139,6 @@ spec:
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-server-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
     - path: https://github.com/rancher/rke2-selinux/releases/download/v0.17.stable.1/rke2-selinux-0.17-1.$EL.noarch.rpm
     - path: https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r .tag_name)-linux-amd64.tar.gz
-    - path: https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/flask.yaml
     - path: https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh
   # - path: https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.3-x86_64-dvd.iso
 EOF
@@ -418,13 +414,6 @@ function deploy_worker () {
   info "worker node running"
 }
 
-################################# flask ################################
-function flask () {
-  # dummy 3 tier app - asked for by a customer. 
- info "deploy flask app"
- curl -sfL http://$serverIp:8080/flask.yaml | sed -e s/localhost/$serverIp/g -e s/XXX/$DOMAIN/g | kubeectl apply -f -  
-}
-
 ################################# longhorn ################################
 function longhorn () {
   # deploy longhorn with local helm/images
@@ -493,7 +482,6 @@ function usage () {
   echo -e "   - Longhorn : $0$BLUE longhorn"$NO_COLOR
   echo -e "   - Rancher : $0$BLUE rancher"$NO_COLOR
   echo -e "   - NeuVector : $0$BLUE neuvector"$NO_COLOR
-  echo -e "   - Flask : $0$BLUE flask"$NO_COLOR
   echo ""
   echo "-------------------------------------------------"
   echo ""
