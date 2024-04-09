@@ -148,12 +148,6 @@ EOF
   warn "- hauler store sync - will take some time..."
   hauler store sync -f /opt/hauler/airgap_hauler.yaml || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
   echo -n "  - synced"; info_ok
-
-#  skipping save since we are just taring it all anyway
-#  we are moving store instead of haul.tar.gz
-#  warn "- hauler store save - will take some time..."
-#  hauler store save -f /opt/hauler/haul.tar.zst > /dev/null 2>&1 || { fatal "hauler failed to save - run manually : $BLUE hauler store save -f /opt/hauler/haul.tar.zst $NO_COLOR" ; }
-#  echo -n "  - saved"; info_ok
   
   # copy hauler binary
   rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
