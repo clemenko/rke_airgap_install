@@ -42,10 +42,25 @@ export serverIp=${server:-$(hostname -I | awk '{ print $1 }')}
 function build () {
 
   info "checking for hauler / ztsd / jq / helm"
-  command -v hauler >/dev/null 2>&1 || { warn "hauler not found, installing"; curl -sfL https://get.hauler.dev | bash > /dev/null 2>&1; }
-  yum list installed zstd > /dev/null 2>&1 || { warn "zstd not found, installing"; yum install zstd -y > /dev/null 2>&1; }
-  command -v jq >/dev/null 2>&1 || { warn "jq not found, installing"; yum install -y epel-release > /dev/null 2>&1 ; yum install -y jq > /dev/null 2>&1; }
-  command -v helm >/dev/null 2>&1 || { warn "helm not found, installing"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1; } 
+
+  echo -e -n "checking zstd "
+  yum list installed zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
+  info_ok
+
+  echo -e -n "checking helm "
+  command -v helm >/dev/null 2>&1 || { echo -e -n "$RED" " ** helm was not found ** ""$NO_COLOR"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash  > /dev/null 2>&1; }
+  info_ok
+
+  # get hauler if needed
+  echo -e -n "checking hauler "
+  command -v hauler >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | bash  > /dev/null 2>&1; }
+  info_ok
+
+  # get jq if needed
+  echo -e -n "checking jq "
+  command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; yum install -y jq > /dev/null 2>&1; }
+  info_ok
+
 
   cd /opt/hauler
 
