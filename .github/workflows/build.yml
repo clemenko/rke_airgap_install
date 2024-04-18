@@ -68,7 +68,7 @@ jobs:
           df -Th ${MOUNT_POINT}
           ls -ld ${MOUNT_POINT}
           cd ${MOUNT_POINT}
-          curl -s https://raw.githubusercontent.com/MozeBaltyk/rkub2/main/hauler_all_the_things.sh 
+          curl -s https://raw.githubusercontent.com/MozeBaltyk/rkub2/main/hauler_all_the_things.sh -O
           sudo ./hauler_all_the_things.sh build
 
   cleanup:
