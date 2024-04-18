@@ -51,7 +51,7 @@ jobs:
           access_key: ${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}
           secret_key: ${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}
 
-      - name: Mount Space Bucket
+      - name: Install s3fs-fuse on Ubuntu
         run: |
           sudo apt-get install automake autotools-dev fuse g++ git libcurl4-gnutls-dev libfuse-dev libssl-dev libxml2-dev make pkg-config
           git clone https://github.com/s3fs-fuse/s3fs-fuse.git
@@ -60,21 +60,25 @@ jobs:
           ./configure
           make
           sudo make install
+
+      - name: Mount Space Bucket
+        run: |
+          mkdir -p ${MOUNT_POINT}
           s3fs ${BUCKET} ${MOUNT_POINT} -o url=https://${REGION}.digitaloceanspaces.com
+
+      - name: Install prerequisites
+        run: |
           curl -sfL https://get.hauler.dev | bash
+
+      - name: Build
+        run: |
           curl -s https://raw.githubusercontent.com/MozeBaltyk/rkub2/main/hauler_all_the_things.sh | sudo bash -s build
-        continue-on-error: true
 
   cleanup:
     name: Cleanup
     runs-on: ubuntu-latest
     needs: Package
 #   if: always()
-
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./test/DO/infra
 
     steps:
       - name: Checkout files
