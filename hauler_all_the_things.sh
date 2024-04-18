@@ -69,7 +69,7 @@ function build () {
   info_ok
 
 
-  cd /opt/hauler
+  sudo cd /opt/hauler
 
   info "creating hauler manifest"
   # versions
