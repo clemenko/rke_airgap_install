@@ -57,7 +57,11 @@ jobs:
           mkdir -p ${MOUNT_POINT}
           s3fs ${BUCKET} ${MOUNT_POINT} -o url=https://${REGION}.digitaloceanspaces.com -o passwd_file=./passwd-s3fs
           df -Th ${MOUNT_POINT}
+
+      - name: Test Mount point
+        run: |
           ls -ld ${MOUNT_POINT}
+          cd ${MOUNT_POINT} && touch toto
 
       - name: Install prerequisites
         run: |
@@ -68,6 +72,7 @@ jobs:
           df -Th ${MOUNT_POINT}
           curl -s https://raw.githubusercontent.com/MozeBaltyk/rkub2/main/hauler_all_the_things.sh -O
           chmod +x hauler_all_the_things.sh
+          cd ${MOUNT_POINT}
           sudo ./hauler_all_the_things.sh build
 
   cleanup:

@@ -68,9 +68,6 @@ function build () {
   command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; $PKG_MANAGER install epel-release -y  > /dev/null 2>&1; $PKG_MANAGER install -y jq > /dev/null 2>&1; }
   info_ok
 
-
-  sudo cd /opt/hauler
-
   info "creating hauler manifest"
   # versions
   export RKE_VERSION=$(curl -s https://update.rke2.io/v1-release/channels | jq -r '.data[] | select(.id=="stable") | .latest' | awk -F"+" '{print $1}'| sed 's/v//')
