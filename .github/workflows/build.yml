@@ -43,14 +43,6 @@ jobs:
       - name: Checkout files
         uses: actions/checkout@v4
 
-      - name: Set up S3cmd cli tool
-        uses: s3-actions/s3cmd@main
-        with:
-          provider: digitalocean
-          region: ${{secrets.DIGITALOCEAN_REGION}}
-          access_key: ${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}
-          secret_key: ${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}
-
       - name: Install s3fs-fuse on Ubuntu
         run: |
           sudo apt-get install automake autotools-dev fuse g++ git libcurl4-gnutls-dev libfuse-dev libssl-dev libxml2-dev make pkg-config
@@ -63,8 +55,14 @@ jobs:
 
       - name: Mount Space Bucket
         run: |
+          echo "${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}:${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}" > /etc/passwd-s3fs
+          chmod 600 /etc/passwd-s3fs
           mkdir -p ${MOUNT_POINT}
           s3fs ${BUCKET} ${MOUNT_POINT} -o url=https://${REGION}.digitaloceanspaces.com
+          df -Th
+          ls ${MOUNT_POINT}
+          cd ${MOUNT_POINT}
+          pwd
 
       - name: Install prerequisites
         run: |
@@ -78,7 +76,7 @@ jobs:
     name: Cleanup
     runs-on: ubuntu-latest
     needs: Package
-#   if: always()
+    if: always()
 
     steps:
       - name: Checkout files
