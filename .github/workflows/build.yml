@@ -66,9 +66,8 @@ jobs:
       - name: Build
         run: |
           df -Th ${MOUNT_POINT}
-          ls -ld ${MOUNT_POINT}
-          cd ${MOUNT_POINT}
           curl -s https://raw.githubusercontent.com/MozeBaltyk/rkub2/main/hauler_all_the_things.sh -O
+          chmod +x hauler_all_the_things.sh
           sudo ./hauler_all_the_things.sh build
 
   cleanup:
