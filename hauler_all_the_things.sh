@@ -30,6 +30,13 @@ function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 
 export PATH=$PATH:/usr/local/bin
 
+# Package Manager 
+if [[ -f /etc/debian_version ]]; then 
+  export PKG_MANAGER='apt-get';
+elif [[ -f /etc/redhat-release ]]; then
+  export PKG_MANAGER='yum';
+fi
+
 # el version
 if which rpm > /dev/null 2>&1 ; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" ) ; fi
 
@@ -44,7 +51,7 @@ function build () {
   info "checking for hauler / ztsd / jq / helm"
 
   echo -e -n "checking zstd "
-  command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
+  command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; $PKG_MANAGER install zstd -y > /dev/null 2>&1; }
   info_ok
 
   echo -e -n "checking helm "
@@ -58,7 +65,7 @@ function build () {
 
   # get jq if needed
   echo -e -n "checking jq "
-  command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; yum install -y jq > /dev/null 2>&1; }
+  command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; $PKG_MANAGER install epel-release -y  > /dev/null 2>&1; $PKG_MANAGER install -y jq > /dev/null 2>&1; }
   info_ok
 
 
@@ -174,7 +181,7 @@ EOF
   echo -e "---------------------------------------------------------------------------"
   echo -e $BLUE"    move file to other network..."
   echo -e $YELLOW"    then uncompress with : "$NO_COLOR
-  echo -e "      mkdir /opt/hauler && yum install -y zstd"
+  echo -e "      mkdir /opt/hauler && $PKG_MANAGER install -y zstd"
   echo -e "      tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"
   echo -e "      $0 control"
   echo -e "---------------------------------------------------------------------------"
