@@ -38,17 +38,21 @@ elif [[ -f /etc/redhat-release ]]; then
 fi
 
 # el version
-if which rpm > /dev/null 2>&1 ; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" ) ; fi
+if which rpm > /dev/null 2>&1 ; then 
+  export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" ) ; 
+else
+  export EL="el8"
+fi
 
 # check for root
-if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
+# if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
 
 export serverIp=${server:-$(hostname -I | awk '{ print $1 }')}
 
 ################################# build ################################
 function build () {
 
-  info "checking for hauler / ztsd / jq / helm"
+  info "checking for hauler / zstd / jq / helm"
 
   echo -e -n "checking zstd "
   command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; $PKG_MANAGER install zstd -y > /dev/null 2>&1; }
@@ -67,6 +71,8 @@ function build () {
   echo -e -n "checking jq "
   command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; $PKG_MANAGER install epel-release -y  > /dev/null 2>&1; $PKG_MANAGER install -y jq > /dev/null 2>&1; }
   info_ok
+
+  cd /opt/hauler
 
   info "creating hauler manifest"
   # versions

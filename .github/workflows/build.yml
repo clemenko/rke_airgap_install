@@ -74,7 +74,7 @@ jobs:
           cd ${MOUNT_POINT}
           curl -s https://raw.githubusercontent.com/MozeBaltyk/rkub2/main/hauler_all_the_things.sh -O
           chmod +x hauler_all_the_things.sh
-          sudo ${MOUNT_POINT}/hauler_all_the_things.sh build
+          ${MOUNT_POINT}/hauler_all_the_things.sh build
 
   cleanup:
     name: Cleanup
