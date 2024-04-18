@@ -44,7 +44,7 @@ function build () {
   info "checking for hauler / ztsd / jq / helm"
 
   echo -e -n "checking zstd "
-  yum list installed zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
+  command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
   info_ok
 
   echo -e -n "checking helm "

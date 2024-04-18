@@ -1,0 +1,92 @@
+---
+name: Build
+
+on:
+  workflow_dispatch:
+
+env:
+  DO_PAT: ${{secrets.DIGITALOCEAN_ACCESS_TOKEN}}
+  AWS_ACCESS_KEY_ID: ${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}
+  AWS_SECRET_ACCESS_KEY: ${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}
+  REGION: ${{secrets.DIGITALOCEAN_REGION}}
+  MOUNT_POINT: "/opt/hauler"
+  BUCKET: "rkub2-github-action-${{ github.run_id }}"
+
+jobs:
+  bucket:
+    name: Bucket
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up S3cmd cli tool
+        uses: s3-actions/s3cmd@main
+        with:
+          provider: digitalocean
+          region: ${{secrets.DIGITALOCEAN_REGION}}
+          access_key: ${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}
+          secret_key: ${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}
+
+      - name: Create Space Bucket
+        run: |
+          sed -i -e 's/signature_v2.*$/signature_v2 = True/' ~/.s3cfg
+          s3cmd mb s3://${BUCKET}
+          sleep 10
+          s3fs ${BUCKET} ${MOUNT_POINT} -o url=https://${REGION}.digitaloceanspaces.com
+        continue-on-error: true
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    needs: Bucket
+    container:
+      image: rockylinux/rockylinux:9
+
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v4
+
+      - name: Set up S3cmd cli tool
+        uses: s3-actions/s3cmd@main
+        with:
+          provider: digitalocean
+          region: ${{secrets.DIGITALOCEAN_REGION}}
+          access_key: ${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}
+          secret_key: ${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}
+
+      - name: Create Space Bucket
+        run: |
+          s3fs ${BUCKET} ${MOUNT_POINT} -o url=https://${REGION}.digitaloceanspaces.com
+          curl -sfL https://get.hauler.dev | bash
+          curl -s https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh | sudo bash -s build
+        continue-on-error: true
+
+
+  cleanup:
+    name: Package
+    runs-on: ubuntu-latest
+    needs: Install
+#    if: always()
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./test/DO/infra
+
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v4
+
+      - name: Set up S3cmd cli tool
+        uses: s3-actions/s3cmd@main
+        with:
+          provider: digitalocean
+          region: ${{secrets.DIGITALOCEAN_REGION}}
+          access_key: ${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}
+          secret_key: ${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}
+
+      - name: Remove Space bucket
+        run: |
+          sed -i -e 's/signature_v2.*$/signature_v2 = True/' ~/.s3cfg
+          s3cmd rb s3://${BUCKET} --recursive
+          sleep 10
+        continue-on-error: true
