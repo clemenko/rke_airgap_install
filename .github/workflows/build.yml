@@ -62,9 +62,9 @@ jobs:
 
 
   cleanup:
-    name: Package
+    name: Cleanup
     runs-on: ubuntu-latest
-    needs: Install
+    needs: Package
 #    if: always()
 
     defaults:
