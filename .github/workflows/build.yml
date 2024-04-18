@@ -55,8 +55,8 @@ jobs:
 
       - name: Mount Space Bucket
         run: |
-          echo "${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}:${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}" > /etc/passwd-s3fs
-          chmod 600 /etc/passwd-s3fs
+          sudo echo "${{secrets.DIGITALOCEAN_SPACES_ACCESS_TOKEN}}:${{secrets.DIGITALOCEAN_SPACES_SECRET_KEY}}" > /etc/passwd-s3fs
+          sudo chmod 600 /etc/passwd-s3fs
           mkdir -p ${MOUNT_POINT}
           s3fs ${BUCKET} ${MOUNT_POINT} -o url=https://${REGION}.digitaloceanspaces.com
           df -Th
