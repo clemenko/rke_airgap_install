@@ -62,6 +62,7 @@ jobs:
         run: |
           ls -ld ${MOUNT_POINT}
           cd ${MOUNT_POINT} && touch toto
+          ls -l ${MOUNT_POINT}
 
       - name: Install prerequisites
         run: |
@@ -70,9 +71,9 @@ jobs:
       - name: Build
         run: |
           df -Th ${MOUNT_POINT}
+          cd ${MOUNT_POINT}
           curl -s https://raw.githubusercontent.com/MozeBaltyk/rkub2/main/hauler_all_the_things.sh -O
           chmod +x hauler_all_the_things.sh
-          cd ${MOUNT_POINT}
           sudo ./hauler_all_the_things.sh build
 
   cleanup:
