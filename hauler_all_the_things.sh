@@ -479,11 +479,11 @@ function usage () {
   echo -e $RED" - Move the ZST file across the air gap"$NO_COLOR
   echo ""
   echo " - Build 3 vms with 4cpu and 8gb of ram"
-  echo -e "   - On 1st node run, as root:"
+  echo -e "   - On 1st node run, as $RED"root$NO_COLOR:"
   echo -e "     -$BLUE mkdir /opt/hauler && tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"$NO_COLOR
   echo -e "     -$BLUE cd /opt/hauler; $0 control"$NO_COLOR
   echo ""
-  echo -e "   - On 2nd, and 3rd nodes run, as root:"
+  echo -e "   - On 2nd, and 3rd nodes run, as $RED"root$NO_COLOR:"
   echo -e "      -$BLUE curl -sfL http://$serverIp:8080/hauler_all_the_things.sh | bash -s -- worker $serverIp "$NO_COLOR
   echo ""
   echo " - Application Setup from 1st node install"
