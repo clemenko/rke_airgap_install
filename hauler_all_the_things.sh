@@ -33,22 +33,24 @@ export PATH=$PATH:/usr/local/bin
 # el version
 if which rpm > /dev/null 2>&1 ; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" ) ; fi
 
-# check for root
-if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
-
 export serverIp=${server:-$(hostname -I | awk '{ print $1 }')}
+
+function got_root () {
+  # check for root
+  if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
+}
 
 ################################# build ################################
 function build () {
 
-  info "checking for hauler / ztsd / jq / helm"
+  info "checking for hauler / zstd / jq / helm"
 
   echo -e -n "checking zstd "
-  yum list installed zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
+  command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
   info_ok
 
   echo -e -n "checking helm "
-  command -v helm >/dev/null 2>&1 || { echo -e -n "$RED" " ** helm was not found ** ""$NO_COLOR"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash  > /dev/null 2>&1; }
+  command -v helm > /dev/null 2>&1 || { echo -e -n "$RED" " ** helm was not found ** ""$NO_COLOR"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash  > /dev/null 2>&1; }
   info_ok
 
   # get hauler if needed
@@ -60,7 +62,6 @@ function build () {
   echo -e -n "checking jq "
   command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; yum install -y jq > /dev/null 2>&1; }
   info_ok
-
 
   cd /opt/hauler
 
