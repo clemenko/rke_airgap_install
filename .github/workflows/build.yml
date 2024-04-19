@@ -58,12 +58,6 @@ jobs:
           s3fs ${BUCKET} ${MOUNT_POINT} -o url=https://${REGION}.digitaloceanspaces.com -o passwd_file=./passwd-s3fs
           df -Th ${MOUNT_POINT}
 
-      - name: Test Mount point
-        run: |
-          ls -ld ${MOUNT_POINT}
-          cd ${MOUNT_POINT} && touch test
-          ls -l ${MOUNT_POINT}
-
       - name: Install prerequisites
         run: |
           curl -sfL https://get.hauler.dev | bash
@@ -76,6 +70,14 @@ jobs:
           chmod +x hauler_all_the_things.sh
           ${MOUNT_POINT}/hauler_all_the_things.sh build
 
+  delay:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Delay one hour
+      uses: whatnick/wait-action@master
+      with:
+        time: '3600s'
+  
   cleanup:
     name: Cleanup
     runs-on: ubuntu-latest

@@ -194,6 +194,8 @@ EOF
 ################################# hauler_setup ################################
 function hauler_setup () {
 
+if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
+
 # make sure it is not running
 if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
 
@@ -281,6 +283,9 @@ fi
 
 ################################# base ################################
 function base () {
+
+if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
+
   # install all the base bits.
 
   info "updating kernel settings"
