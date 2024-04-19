@@ -203,7 +203,7 @@ Description=Hauler Serve %I Service
 
 [Service]
 Environment="HOME=/opt/hauler/"
-ExecStart=/usr/local/bin/hauler store serve %i
+ExecStart=/usr/local/bin/hauler store serve %i -s /opt/hauler/store
 WorkingDirectory=/opt/hauler
 
 [Install]
