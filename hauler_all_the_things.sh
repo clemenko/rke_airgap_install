@@ -31,14 +31,12 @@ function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 export PATH=$PATH:/usr/local/bin
 
 # el version
-if which rpm > /dev/null 2>&1 ; then export EL=$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" ) ; fi
+export EL_ver=  #set to el8 or el9 or the script will figure it out
+if which rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; fi
 
-export serverIp=${server:-$(hostname -I | awk '{ print $1 }')}
+if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
 
-function got_root () {
-  # check for root
-  if [ $(whoami) != "root" ] ; then fatal "please run $0 as root"; fi
-}
+if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ "$1" = "serve" ] || [ "$1" = "neuvector" ] || [ "$1" = "longhorn" ] || [ "$1" = "rancher" ] || [ "$1" = "validate" ] || [ "$1" = "flask" ])  ; then fatal "please run $0 as root"; fi
 
 ################################# build ################################
 function build () {
@@ -272,8 +270,8 @@ fi
 
 ################################# base ################################
 function base () {
-  # install all the base bits.
 
+  # install all the base bits.
   info "updating kernel settings"
   cat << EOF > /etc/sysctl.conf
 # SWAP settings
@@ -481,11 +479,11 @@ function usage () {
   echo -e $RED" - Move the ZST file across the air gap"$NO_COLOR
   echo ""
   echo " - Build 3 vms with 4cpu and 8gb of ram"
-  echo -e "   - On 1st node run:"
+  echo -e "   - On 1st node run, as root:"
   echo -e "     -$BLUE mkdir /opt/hauler && tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"$NO_COLOR
   echo -e "     -$BLUE cd /opt/hauler; $0 control"$NO_COLOR
   echo ""
-  echo -e "   - On 2nd, and 3rd nodes run:"
+  echo -e "   - On 2nd, and 3rd nodes run, as root:"
   echo -e "      -$BLUE curl -sfL http://$serverIp:8080/hauler_all_the_things.sh | bash -s -- worker $serverIp "$NO_COLOR
   echo ""
   echo " - Application Setup from 1st node install"
