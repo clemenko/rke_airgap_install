@@ -41,7 +41,11 @@ if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ 
 ################################# build ################################
 function build () {
 
-  info "checking for hauler / zstd / jq / helm"
+  info "checking for hauler / zstd / rsync / jq / helm"
+
+  echo -e -n "checking rsync "
+  command -v rsync > /dev/null 2>&1 || { echo -e -n "$RED" " ** rsync not found ** ""$NO_COLOR"; yum install rsync -y > /dev/null 2>&1; }
+  info_ok
 
   echo -e -n "checking zstd "
   command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
