@@ -230,19 +230,19 @@ EOF
   sleep 5
 
   # wait for fileserver to come up.
-  until [ $(ls -1 /opt/hauler/store-files/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
+  until [ $(ls -1 /opt/hauler/fileserver/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
  
   until hauler store info > /dev/null 2>&1; do sleep 5; done 
 
   # generate an index file
-  hauler store info > /opt/hauler/store-files/_hauler_index.txt || fatal "hauler store is having issues - check /opt/hauler/store-files/_hauler_index.txt"
+  hauler store info > /opt/hauler/fileserver/_hauler_index.txt || fatal "hauler store is having issues - check /opt/hauler/fileserver/_hauler_index.txt"
 
   # add dvd iso
-  # mkdir -p /opt/hauler/store-files/dvd
-  # mount -o loop Rocky-8.9-x86_64-dvd1.iso /opt/store-files/dvd
+  # mkdir -p /opt/hauler/fileserver/dvd
+  # mount -o loop Rocky-8.9-x86_64-dvd1.iso /opt/fileserver/dvd
 
   # create yum repo file
-  cat << EOF > /opt/hauler/store-files/hauler.repo
+  cat << EOF > /opt/hauler/fileserver/hauler.repo
 [hauler]
 name=Hauler Air Gap Server
 baseurl=http://$serverIp:8080
@@ -266,7 +266,7 @@ EOF
   yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
 
   # create repo for rancher rpms
-  createrepo /opt/hauler/store-files > /dev/null 2>&1
+  createrepo /opt/hauler/fileserver > /dev/null 2>&1
 
 fi
 
