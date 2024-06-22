@@ -32,7 +32,7 @@ export PATH=$PATH:/usr/local/bin
 
 # el version
 export EL_ver=  #set to el8 or el9 or the script will figure it out
-if which rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; fi
+if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; fi
 
 if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
 
@@ -41,7 +41,15 @@ if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ 
 ################################# build ################################
 function build () {
 
-  info "checking for hauler / zstd / rsync / jq / helm"
+  info "checking for sudo / openssl / hauler / zstd / rsync / jq / helm"
+
+  echo -e -n "checking sudo "
+  command -v sudo > /dev/null 2>&1 || { echo -e -n "$RED" " ** sudo not found ** ""$NO_COLOR"; yum install sudo -y > /dev/null 2>&1; }
+  info_ok
+
+  echo -e -n "checking openssl "
+  command -v openssl > /dev/null 2>&1 || { echo -e -n "$RED" " ** openssl not found ** ""$NO_COLOR"; yum install openssl -y > /dev/null 2>&1; }
+  info_ok
 
   echo -e -n "checking rsync "
   command -v rsync > /dev/null 2>&1 || { echo -e -n "$RED" " ** rsync not found ** ""$NO_COLOR"; yum install rsync -y > /dev/null 2>&1; }
