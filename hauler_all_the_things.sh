@@ -78,7 +78,7 @@ function build () {
   info "creating hauler manifest"
   # versions
   export dzver=$(curl -s https://dzver.rfed.io/json)
-  export RKE_VERSION=$(echo $dzver | jq -r '."rke2 stable"' | awk -F+ '{print $1}')
+  export RKE_VERSION=$(echo $dzver | jq -r '."rke2 stable"' | awk -F+ '{print $1}'|sed 's/v//')
   export CERT_VERSION=$(echo $dzver | jq -r '."cert-manager"') 
   export RANCHER_VERSION=$(echo $dzver | jq -r '."rancher"')
   export LONGHORN_VERSION=$(echo $dzver | jq -r '."longhorn"')
@@ -385,7 +385,7 @@ function deploy_control () {
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
 
   # set registry override
-  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  $serverIp:5000:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
+  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  quay.io:\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
 
   # insall rke2 - stig'd
   yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1 || fatal "yum install rke2 packages didn't work. check the hauler fileserver service."
