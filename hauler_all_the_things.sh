@@ -129,6 +129,9 @@ EOF
   # kubectl fix
   echo "rancher/kubectl:v1.20.2" >> hauler_temp/rancher-images.txt
 
+  # shell fix
+  echo "rancher/shell:v0.1.24" >> hauler_temp/rancher-images.txt
+
   for i in $(cat hauler_temp/rancher-images.txt); do echo "    - name: "$i >> airgap_hauler.yaml; done
 
   rm -rf hauler_temp
