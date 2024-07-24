@@ -82,7 +82,9 @@ function build () {
   export CERT_VERSION=$(echo $dzver | jq -r '."cert-manager"') 
   export RANCHER_VERSION=$(echo $dzver | jq -r '."rancher"')
   export LONGHORN_VERSION=$(echo $dzver | jq -r '."longhorn"')
-  export NEU_VERSION=$(echo $dzver | jq -r '."neuvector"')
+  #export NEU_VERSION=$(echo $dzver | jq -r '."neuvector"')
+  # neuvector chart has different version than code
+  export NEU_VERSION=$(curl -s https://api.github.com/repos/neuvector/neuvector-helm/releases/latest | jq -r .tag_name)
 
   # temp dir
   mkdir -p hauler_temp
