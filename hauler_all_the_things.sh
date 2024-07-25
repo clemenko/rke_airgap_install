@@ -200,9 +200,14 @@ EOF
 ################################# hauler_setup ################################
 function hauler_setup () {
 
+# check that the script is in the correct dir
+
+if [ ! -d /opt/hauler ]; then 
+  fatal Please create /opt/hauler and unpack the zst there.
+fi
+
 # make sure it is not running
 if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
-
 
   info "setting up hauler"
 
