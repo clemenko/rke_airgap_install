@@ -78,7 +78,7 @@ function build () {
   info "creating hauler manifest"
   # versions
   export dzver=$(curl -s https://dzver.rfed.io/json)
-  export RKE_VERSION=$(echo $dzver | jq -r '."rke2 stable"' | awk -F+ '{print $1}'|sed 's/v//')
+  export RKE_VERSION=$(echo $dzver | jq -r '."rke2 stable"' | sed 's/v//')
   export CERT_VERSION=$(echo $dzver | jq -r '."cert-manager"') 
   export RANCHER_VERSION=$(echo $dzver | jq -r '."rancher"')
   export LONGHORN_VERSION=$(echo $dzver | jq -r '."longhorn"')
