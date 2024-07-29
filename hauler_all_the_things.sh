@@ -283,6 +283,8 @@ EOF
   # install createrepo
   yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
 
+  cd /opt/hauler/fileserver 
+  
   # create repo for rancher rpms
   createrepo /opt/hauler/fileserver > /dev/null 2>&1
 
