@@ -44,33 +44,33 @@ function build () {
   info "checking for sudo / openssl / hauler / zstd / rsync / jq / helm"
 
   echo -e -n "checking sudo "
-  command -v sudo > /dev/null 2>&1 || { echo -e -n "$RED" " ** sudo not found ** ""$NO_COLOR"; yum install sudo -y > /dev/null 2>&1; }
+  command -v sudo > /dev/null 2>&1 || { echo -e -n "$RED" " ** sudo not found, installing ** ""$NO_COLOR"; yum install sudo -y > /dev/null 2>&1; }
   info_ok
 
   echo -e -n "checking openssl "
-  command -v openssl > /dev/null 2>&1 || { echo -e -n "$RED" " ** openssl not found ** ""$NO_COLOR"; yum install openssl -y > /dev/null 2>&1; }
+  command -v openssl > /dev/null 2>&1 || { echo -e -n "$RED" " ** openssl not found, installing ** ""$NO_COLOR"; yum install openssl -y > /dev/null 2>&1; }
   info_ok
 
   echo -e -n "checking rsync "
-  command -v rsync > /dev/null 2>&1 || { echo -e -n "$RED" " ** rsync not found ** ""$NO_COLOR"; yum install rsync -y > /dev/null 2>&1; }
+  command -v rsync > /dev/null 2>&1 || { echo -e -n "$RED" " ** rsync not found, installing ** ""$NO_COLOR"; yum install rsync -y > /dev/null 2>&1; }
   info_ok
 
   echo -e -n "checking zstd "
-  command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
+  command -v zstd > /dev/null 2>&1 || { echo -e -n "$RED" " ** zstd not found, installing ** ""$NO_COLOR"; yum install zstd -y > /dev/null 2>&1; }
   info_ok
 
   echo -e -n "checking helm "
-  command -v helm > /dev/null 2>&1 || { echo -e -n "$RED" " ** helm was not found ** ""$NO_COLOR"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash  > /dev/null 2>&1; }
+  command -v helm > /dev/null 2>&1 || { echo -e -n "$RED" " ** helm was not found, installing ** ""$NO_COLOR"; curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash  > /dev/null 2>&1; }
   info_ok
 
   # get hauler if needed
   echo -e -n "checking hauler "
-  command -v hauler >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | bash  > /dev/null 2>&1; }
+  command -v hauler >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found, installing ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | bash  > /dev/null 2>&1; }
   info_ok
 
   # get jq if needed
   echo -e -n "checking jq "
-  command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; yum install -y jq > /dev/null 2>&1; }
+  command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found, installing ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; yum install -y jq > /dev/null 2>&1; }
   info_ok
 
   cd /opt/hauler
