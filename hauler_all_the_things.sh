@@ -240,13 +240,15 @@ EOF
   systemctl daemon-reload
 
   # start fileserver
-  systemctl enable --now hauler@fileserver > /dev/null 2>&1 || fatal "hauler fileserver did not start"
+  systemctl enable hauler@fileserver > /dev/null 2>&1 
+  systemctl start hauler@fileserver || fatal "hauler fileserver did not start"
   echo -n " - fileserver started"; info_ok
 
   sleep 60
 
   # start reg
-  systemctl enable --now hauler@registry > /dev/null 2>&1 || fatal "hauler registry did not start"
+  systemctl enable hauler@registry > /dev/null 2>&1 
+  systemctl start hauler@registry || fatal "hauler registry did not start"
   echo -n " - registry started"; info_ok
 
   sleep 60
