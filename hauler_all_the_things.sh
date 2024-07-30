@@ -366,6 +366,9 @@ sysctl -p > /dev/null 2>&1
     # add repo 
   curl -sfL http://$serverIp:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo
 
+    # set registry override
+  echo -e "mirrors:\n  \"*\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml 
+
   # clean all the yums
   yum clean all  > /dev/null 2>&1
 
@@ -396,9 +399,6 @@ function deploy_control () {
   # set up ssl passthrough for nginx
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
 
-  # set registry override
-  echo -e "mirrors:\n  \"*\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml 
-
   # insall rke2 - stig'd
   yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1 || fatal "yum install rke2 packages didn't work. check the hauler fileserver service."
   systemctl enable --now rke2-server.service > /dev/null 2>&1 || fatal "rke2-server didn't start"
@@ -421,7 +421,7 @@ function deploy_control () {
 
   echo "------------------------------------------------------------------------------------"
   echo -e "  Run: $BLUE 'source ~/.bashrc' "$NO_COLOR
-  echo "  Run on the worker nodes"
+  echo    "  Run on the worker nodes"
   echo -e "  - '$BLUE curl -sfL http://$serverIp:8080/hauler_all_the_things.sh | bash -s -- worker $serverIp $NO_COLOR'"
   echo "------------------------------------------------------------------------------------"
 }
@@ -437,9 +437,6 @@ function deploy_worker () {
   mkdir -p /etc/rancher/rke2/
   echo -e "server: https://$serverIp:9345\ntoken: bootstrapAllTheThings\nwrite-kubeconfig-mode: 0600\n#profile: cis-1.23\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
   
-  # set registry override
-  echo -e "mirrors:\n  docker.io:\n    endpoint:\n      - http://$serverIp:5000\n  \"$serverIp:5000\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml
-
   # install rke2
   yum install -y rke2-agent rke2-common rke2-selinux > /dev/null 2>&1 || fatal "packages didn't install"
   systemctl enable --now rke2-agent.service > /dev/null 2>&1 || fatal "rke2-agent didn't start"
