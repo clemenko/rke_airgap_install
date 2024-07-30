@@ -243,18 +243,18 @@ EOF
   systemctl enable --now hauler@fileserver > /dev/null 2>&1 || fatal "hauler fileserver did not start"
   echo -n " - fileserver started"; info_ok
 
-  sleep 5
+  sleep 60
 
   # start reg
   systemctl enable --now hauler@registry > /dev/null 2>&1 || fatal "hauler registry did not start"
   echo -n " - registry started"; info_ok
 
-  sleep 5
+  sleep 60
 
   # wait for fileserver to come up.
-  until [ $(ls -1 /opt/hauler/fileserver/ | grep rpm | wc -l) == 4 ]; do sleep 2; done
+  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) < 9 ]; do sleep 2; done
  
-  until hauler store info > /dev/null 2>&1; do sleep 5; done 
+  until hauler store info > /dev/null 2>&1; do sleep 5; done
 
   # generate an index file
   hauler store info > /opt/hauler/fileserver/_hauler_index.txt || fatal "hauler store is having issues - check /opt/hauler/fileserver/_hauler_index.txt"
@@ -286,11 +286,9 @@ EOF
 
   # install createrepo
   yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
-
-  cd /opt/hauler/fileserver 
   
   # create repo for rancher rpms
-  createrepo /opt/hauler/fileserver > /dev/null 2>&1
+  createrepo /opt/hauler/fileserver > /dev/null 2>&1 || fatal "creaerepo did not finish correctly, please run manually `createrepo /opt/hauler/fileserver`"
 
 fi
 
