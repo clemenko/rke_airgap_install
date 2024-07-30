@@ -2,6 +2,10 @@
 
 # mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
+# test script
+# ./hauler_all_the_things.sh build && ./hauler_all_the_things.sh control && sleep 30 && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && ./hauler_all_the_things.sh rancher && ./hauler_all_the_things.sh neuvector
+
+
 # -----------
 # this script is designed to bootstrap a POC cluster using Hauler
 # this is NOT meant for production!
@@ -367,6 +371,7 @@ sysctl -p > /dev/null 2>&1
   curl -sfL http://$serverIp:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo
 
     # set registry override
+  mkdir -p /etc/rancher/rke2/
   echo -e "mirrors:\n  \"*\":\n    endpoint:\n      - http://$serverIp:5000" > /etc/rancher/rke2/registries.yaml 
 
   # clean all the yums
