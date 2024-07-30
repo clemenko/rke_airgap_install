@@ -3,7 +3,7 @@
 # mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
 # test script
-# ./hauler_all_the_things.sh build && ./hauler_all_the_things.sh control && sleep 30 && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && ./hauler_all_the_things.sh rancher && ./hauler_all_the_things.sh neuvector
+# ./hauler_all_the_things.sh build && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && ./hauler_all_the_things.sh rancher && ./hauler_all_the_things.sh neuvector
 
 
 # -----------
@@ -244,17 +244,17 @@ EOF
   systemctl start hauler@fileserver || fatal "hauler fileserver did not start"
   echo -n " - fileserver started"; info_ok
 
-  sleep 60
+  sleep 30
 
   # start reg
   systemctl enable hauler@registry > /dev/null 2>&1 
   systemctl start hauler@registry || fatal "hauler registry did not start"
   echo -n " - registry started"; info_ok
 
-  sleep 60
+  sleep 30
 
   # wait for fileserver to come up.
-  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) < 9 ]; do sleep 2; done
+  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) > 9 ]; do sleep 2; done
  
   until hauler store info > /dev/null 2>&1; do sleep 5; done
 
