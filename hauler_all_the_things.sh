@@ -454,7 +454,7 @@ function longhorn () {
 function neuvector () {
   # deploy neuvector with local helm/images
   info "deploying neuvector"
-  helm upgrade -i neuvector --namespace neuvector oci://$serverIp:5000/hauler/core --create-namespace  --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set manager.svc.type=ClusterIP --set manager.ingress.host=neuvector.$DOMAIN --set internal.certmanager.enabled=true --plain-http
+  helm upgrade -i neuvector --namespace neuvector oci://$serverIp:5000/hauler/core --create-namespace  --set k3s.enabled=true --set k3s.runtimePath=/run/k3s/containerd/containerd.sock  --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set manager.svc.type=ClusterIP --set manager.ingress.host=neuvector.$DOMAIN --set internal.certmanager.enabled=true --set cve.adapter.internal.certificate.secret=neuvector-internal --set enforcer.internal.certificate.secret=neuvector-internal --set cve.scanner.internal.certificate.secret=neuvector-internal  --set controller.internal.certificate.secret=neuvector-internal --plain-http
 }
 
 ################################# rancher ################################
