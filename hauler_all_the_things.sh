@@ -3,7 +3,7 @@
 # mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
 # test script
-# ./hauler_all_the_things.sh build && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && ./hauler_all_the_things.sh rancher && ./hauler_all_the_things.sh neuvector
+# ./hauler_all_the_things.sh build && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && sleep 45 && ./hauler_all_the_things.sh rancher && sleep 30 && ./hauler_all_the_things.sh neuvector
 
 
 # -----------
