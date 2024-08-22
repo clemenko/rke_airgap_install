@@ -5,6 +5,7 @@
 # test script
 # ./hauler_all_the_things.sh build && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && sleep 45 && ./hauler_all_the_things.sh rancher && sleep 30 && ./hauler_all_the_things.sh neuvector
 
+# for testing - docker.io index.docker.io quay.io gcr.io
 
 # -----------
 # this script is designed to bootstrap a POC cluster using Hauler
