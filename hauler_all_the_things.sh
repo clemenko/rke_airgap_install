@@ -173,10 +173,10 @@ spec:
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-common-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-agent-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-server-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
-    - path: https://github.com/rancher/rke2-selinux/releases/download/v0.17.stable.1/rke2-selinux-0.17-1.$EL.noarch.rpm
+    - path: https://github.com/rancher/rke2-selinux/releases/download/v0.18.stable.1/rke2-selinux-0.18-1.$EL.noarch.rpm
     - path: https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r .tag_name)-linux-amd64.tar.gz
     - path: https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh
-  # - path: https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.3-x86_64-dvd.iso
+  # - path: https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.4-x86_64-dvd.iso
 EOF
 
   echo -n "  - created airgap_hauler.yaml"; info_ok
@@ -231,7 +231,7 @@ Description=Hauler Serve %I Service
 [Service]
 Environment="HOME=/opt/hauler/"
 ExecStart=/usr/local/bin/hauler store serve %i -s /opt/hauler/store
-WorkingDirectory=/opt/hauler
+WorkingDirectory=/opt/hauler/
 
 [Install]
 WantedBy=multi-user.target
@@ -255,7 +255,7 @@ EOF
   sleep 30
 
   # wait for fileserver to come up.
-  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) > 9 ]; do sleep 2; done
+  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) -gt 9 ]; do sleep 2; done
  
   until hauler store info > /dev/null 2>&1; do sleep 5; done
 
