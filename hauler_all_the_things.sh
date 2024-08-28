@@ -41,7 +41,7 @@ if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '
 
 if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
 
-if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ "$1" = "serve" ] || [ "$1" = "neuvector" ] || [ "$1" = "longhorn" ] || [ "$1" = "rancher" ] || [ "$1" = "validate" ] || [ "$1" = "flask" ])  ; then fatal "please run $0 as root"; fi
+if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ "$1" = "serve" ] || [ "$1" = "neuvector" ] || [ "$1" = "longhorn" ] || [ "$1" = "rancher" ] || [ "$1" = "validate" ])  ; then fatal "please run $0 as root"; fi
 
 ################################# build ################################
 function build () {
@@ -492,7 +492,6 @@ function usage () {
   echo -e " $0$BLUE control$NO_COLOR # deploy on a control plane server"
   echo -e " $0$BLUE worker$NO_COLOR # deploy on a worker"
   echo "-------------------------------------------------"
-  echo " $0 flask # deploy a 3 tier app"
   echo " $0 neuvector # deploy neuvector"
   echo " $0 longhorn # deploy longhorn"
   echo " $0 rancher # deploy rancher"
@@ -531,7 +530,6 @@ case "$1" in
         neuvector) neuvector;;
         longhorn) longhorn;;
         rancher) rancher;;
-        flask) flask;;
         validate) validate;;
         *) usage;;
 esac
