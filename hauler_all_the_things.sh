@@ -232,6 +232,8 @@ Description=Hauler Serve %I Service
 Environment="HOME=/opt/hauler/"
 ExecStart=/usr/local/bin/hauler store serve %i -s /opt/hauler/store
 WorkingDirectory=/opt/hauler/
+Restart=always
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
@@ -241,6 +243,7 @@ EOF
   systemctl daemon-reload
 
   # start fileserver
+  mkdir -p /opt/hauler/fileserver
   systemctl enable hauler@fileserver > /dev/null 2>&1 
   systemctl start hauler@fileserver || fatal "hauler fileserver did not start"
   echo -n " - fileserver started"; info_ok
@@ -288,10 +291,14 @@ EOF
 #gpgcheck=0
 
   # install createrepo
-  yum install -y createrepo  > /dev/null 2>&1 || fatal "creaerepo was not installed, please install"
+  if yum list installed createrepo_c > /dev/null 2>&1; then
+    echo "createrepo is already installed"
+  else
+    yum install -y createrepo  > /dev/null 2>&1 || fatal "createrepo was not installed, please install"
+  fi
   
   # create repo for rancher rpms
-  createrepo /opt/hauler/fileserver > /dev/null 2>&1 || fatal "creaerepo did not finish correctly, please run manually `createrepo /opt/hauler/fileserver`"
+  createrepo /opt/hauler/fileserver > /dev/null 2>&1 || fatal "createrepo did not finish correctly, please run manually `createrepo /opt/hauler/fileserver`"
 
 fi
 
@@ -363,7 +370,16 @@ sysctl -p > /dev/null 2>&1
   fi
 
   info "installing base packages"
-  yum install -y zstd iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils > /dev/null 2>&1 || fatal "iptables container-selinux iptables libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils packages didn't install"
+  base_packages="zstd iptables container-selinux libnetfilter_conntrack libnfnetlink libnftnl policycoreutils-python-utils cryptsetup iscsi-initiator-utils"
+  for pkg in $base_packages; do
+      if ! rpm -q $pkg > /dev/null 2>&1; then
+          echo "Installing $pkg..."
+          yum install -y $pkg > /dev/null 2>&1 || fatal "$pkg was not installed, please install"
+      else
+          echo "$pkg is already installed"
+      fi
+  done
+
   systemctl enable --now iscsid > /dev/null 2>&1
   echo -e "[keyfile]\nunmanaged-devices=interface-name:cali*;interface-name:flannel*" > /etc/NetworkManager/conf.d/rke2-canal.conf
 
@@ -383,6 +399,10 @@ sysctl -p > /dev/null 2>&1
 ################################# deploy control ################################
 function deploy_control () {
   # this is for the first node
+
+  # wait and add link
+  grep -qxF 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml PATH=$PATH:/usr/local/bin/:/var/lib/rancher/rke2/bin/' ~/.bashrc || echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml PATH=$PATH:/usr/local/bin/:/var/lib/rancher/rke2/bin/' >> ~/.bashrc
+  source ~/.bashrc
 
   # set up hauler services
   hauler_setup
@@ -406,14 +426,10 @@ function deploy_control () {
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
 
   # insall rke2 - stig'd
-  yum install -y rke2-server rke2-common rke2-selinux > /dev/null 2>&1 || fatal "yum install rke2 packages didn't work. check the hauler fileserver service."
+  yum install -y --disablerepo=* --enablerepo=hauler rke2-server rke2-common rke2-selinux > /dev/null 2>&1 || fatal "yum install rke2 packages didn't work. check the hauler fileserver service."
   systemctl enable --now rke2-server.service > /dev/null 2>&1 || fatal "rke2-server didn't start"
 
   until systemctl is-active -q rke2-server; do sleep 2; done
-
-  # wait and add link
-  echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml PATH=$PATH:/usr/local/bin/:/var/lib/rancher/rke2/bin/" >> ~/.bashrc
-  source ~/.bashrc
 
   # wait for cluster to be active
   until [ $(kubectl get node | grep Ready | wc -l) == 1 ]; do sleep 2; done
