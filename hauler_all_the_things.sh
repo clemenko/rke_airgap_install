@@ -16,8 +16,6 @@ set -ebpf
 
 # application domain name
 export DOMAIN=awesome.sauce
-# set server Ip here or from the command line
-export server=$2
 
 ######  NO MOAR EDITS #######
 # color
