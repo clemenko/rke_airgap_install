@@ -3,10 +3,7 @@
 # mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
 # test script
-# ./hauler_all_the_things.sh build && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && sleep 45 && ./hauler_all_the_things.sh rancher && sleep 30 && ./hauler_all_the_things.sh neuvector
-
-# for testing - 
-# echo "0.0.0.0 docker.io index.docker.io quay.io gcr.io" >> /etc/hosts
+# ./hauler_all_the_things.sh build && echo "0.0.0.0 docker.io index.docker.io quay.io gcr.io" >> /etc/hosts && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && sleep 45 && ./hauler_all_the_things.sh rancher && sleep 30 && ./hauler_all_the_things.sh neuvector
 
 # -----------
 # this script is designed to bootstrap a POC cluster using Hauler
