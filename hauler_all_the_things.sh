@@ -15,6 +15,7 @@ set -ebpf
 # application domain name
 export DOMAIN=awesome.sauce
 
+
 ######  NO MOAR EDITS #######
 # color
 export RED='\x1b[0;31m'
@@ -35,7 +36,7 @@ export PATH=$PATH:/usr/local/bin
 export EL_ver=  #set to el8 or el9 or the script will figure it out
 if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; fi
 
-if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
+if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${$2:-$(hostname -I | awk '{ print $1 }')} ; fi
 
 if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ "$1" = "serve" ] || [ "$1" = "neuvector" ] || [ "$1" = "longhorn" ] || [ "$1" = "rancher" ] || [ "$1" = "validate" ])  ; then fatal "please run $0 as root"; fi
 
@@ -381,7 +382,7 @@ sysctl -p > /dev/null 2>&1
 
   info "adding yum repo"
     # add repo 
-  curl -sfL http://$serverIp:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo
+  curl -sfL http://$serverIp:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo || fatal "check `http://$serverIp:8080/hauler.repo` to ensure the hauler.repo exists"
 
     # set registry override
   mkdir -p /etc/rancher/rke2/
