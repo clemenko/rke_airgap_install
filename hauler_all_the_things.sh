@@ -32,11 +32,14 @@ function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 
 export PATH=$PATH:/usr/local/bin
 
+# set server Ip here or from the command line
+export server=$2
+
 # el version
 export EL_ver=  #set to el8 or el9 or the script will figure it out
 if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; fi
 
-if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${$2:-$(hostname -I | awk '{ print $1 }')} ; fi
+if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
 
 if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ "$1" = "serve" ] || [ "$1" = "neuvector" ] || [ "$1" = "longhorn" ] || [ "$1" = "rancher" ] || [ "$1" = "validate" ])  ; then fatal "please run $0 as root"; fi
 
