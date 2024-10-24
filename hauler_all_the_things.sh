@@ -120,7 +120,7 @@ EOF
 
   curl -sL https://github.com/rancher/rancher/releases/download/$RANCHER_VERSION/rancher-images.txt -o hauler_temp/orig-rancher-images.txt
   sed -E '/neuvector|minio|gke|aks|eks|sriov|harvester|mirrored|longhorn|thanos|tekton|istio|hyper|jenkins|windows/d' hauler_temp/orig-rancher-images.txt > hauler_temp/cleaned-rancher-images.txt
-
+  
   # capi fixes
   grep cluster-api hauler_temp/orig-rancher-images.txt >> hauler_temp/cleaned-rancher-images.txt
   grep kubectl hauler_temp/orig-rancher-images.txt >> hauler_temp/cleaned-rancher-images.txt
@@ -138,6 +138,9 @@ EOF
 
   # shell fix
   echo "rancher/shell:v0.1.24" >> hauler_temp/rancher-images.txt
+
+    # mirrored ingress nginx fix
+  grep mirrored-ingress-nginx hauler_temp/orig-rancher-images.txt >> hauler_temp/rancher-images.txt
 
   for i in $(cat hauler_temp/rancher-images.txt); do echo "    - name: "$i >> airgap_hauler.yaml; done
 
