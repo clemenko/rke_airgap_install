@@ -16,7 +16,6 @@ set -ebpf
 export DOMAIN=awesome.sauce
 
 export TMPDIR=/var/tmp
-export LOGIN='' # Only set if you need to login to the source container repository.
 
 ######  NO MOAR EDITS #######
 # color
