@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
+# mkdir ${TMPDIR}/hauler/; cd ${TMPDIR}/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
 # test script
 # ./hauler_all_the_things.sh build && echo "0.0.0.0 docker.io index.docker.io quay.io gcr.io" >> /etc/hosts && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && sleep 45 && ./hauler_all_the_things.sh rancher && sleep 30 && ./hauler_all_the_things.sh neuvector
@@ -15,6 +15,8 @@ set -ebpf
 # application domain name
 export DOMAIN=awesome.sauce
 
+export TMPDIR=/var/tmp
+export LOGIN='' # Only set if you need to login to the source container repository.
 
 ######  NO MOAR EDITS #######
 # color
@@ -78,7 +80,8 @@ function build () {
   command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found, installing ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; yum install -y jq > /dev/null 2>&1; }
   info_ok
 
-  cd /opt/hauler
+  mkdir -p ${TMPDIR}/hauler
+  cd ${TMPDIR}/hauler
 
   info "creating hauler manifest"
   # versions
@@ -185,21 +188,21 @@ EOF
   echo -n "  - created airgap_hauler.yaml"; info_ok
 
   warn "- hauler store sync - will take some time..."
-  hauler store sync -f /opt/hauler/airgap_hauler.yaml || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
+  hauler store sync -f ${TMPDIR}/hauler/airgap_hauler.yaml || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
   echo -n "  - synced"; info_ok
   
   # copy hauler binary
-  rsync -avP /usr/local/bin/hauler /opt/hauler/hauler > /dev/null 2>&1
+  rsync -avP /usr/local/bin/hauler ${TMPDIR}/hauler/hauler > /dev/null 2>&1
 
   warn "- compressing all the things - will take a minute"
-  tar -I zstd -cf /opt/hauler_airgap_$(date '+%m_%d_%y').zst $(ls) > /dev/null 2>&1
-  echo -n "  - created /opt/hauler_airgap_$(date '+%m_%d_%y').zst "; info_ok
+  tar -I zstd -cf ${TMPDIR}/hauler_airgap_$(date '+%m_%d_%y').zst $(ls) > /dev/null 2>&1
+  echo -n "  - created ${TMPDIR}/hauler_airgap_$(date '+%m_%d_%y').zst "; info_ok
 
   echo -e "---------------------------------------------------------------------------"
   echo -e $BLUE"    move file to other network..."
   echo -e $YELLOW"    then uncompress with : "$NO_COLOR
-  echo -e "      mkdir /opt/hauler && yum install -y zstd"
-  echo -e "      tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"
+  echo -e "      mkdir ${TMPDIR}/hauler && yum install -y zstd"
+  echo -e "      tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C ${TMPDIR}/hauler"
   echo -e "      $0 control"
   echo -e "---------------------------------------------------------------------------"
 
@@ -210,8 +213,8 @@ function hauler_setup () {
 
 # check that the script is in the correct dir
 
-if [ ! -d /opt/hauler ]; then 
-  fatal Please create /opt/hauler and unpack the zst there.
+if [ ! -d ${TMPDIR}/hauler ]; then 
+  fatal Please create ${TMPDIR}/hauler and unpack the zst there.
 fi
 
 # make sure it is not running
@@ -223,7 +226,7 @@ if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
   if [ ! -f /usr/local/bin/hauler ]; then  install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin" ; fi
 
   # load
-#  hauler store load /opt/hauler/haul.tar.zst || fatal "Failed to load hauler store"
+#  hauler store load ${TMPDIR}/hauler/haul.tar.zst || fatal "Failed to load hauler store"
 
   # add systemd file
 cat << EOF > /etc/systemd/system/hauler@.service
@@ -232,9 +235,9 @@ cat << EOF > /etc/systemd/system/hauler@.service
 Description=Hauler Serve %I Service
 
 [Service]
-Environment="HOME=/opt/hauler/"
-ExecStart=/usr/local/bin/hauler store serve %i -s /opt/hauler/store
-WorkingDirectory=/opt/hauler/
+Environment="HOME=${TMPDIR}/hauler/"
+ExecStart=/usr/local/bin/hauler store serve %i -s ${TMPDIR}/hauler/store
+WorkingDirectory=${TMPDIR}/hauler/
 Restart=always
 RestartSec=5s
 
@@ -246,7 +249,7 @@ EOF
   systemctl daemon-reload
 
   # start fileserver
-  mkdir -p /opt/hauler/fileserver
+  mkdir -p ${TMPDIR}/hauler/fileserver
   systemctl enable hauler@fileserver > /dev/null 2>&1 
   systemctl start hauler@fileserver || fatal "hauler fileserver did not start"
   echo -n " - fileserver started"; info_ok
@@ -261,19 +264,19 @@ EOF
   sleep 30
 
   # wait for fileserver to come up.
-  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) -gt 9 ]; do sleep 2; done
+  until [ $(ls -1 ${TMPDIR}/hauler/fileserver/ | wc -l) -gt 9 ]; do sleep 2; done
  
   until hauler store info > /dev/null 2>&1; do sleep 5; done
 
   # generate an index file
-  hauler store info > /opt/hauler/fileserver/_hauler_index.txt || fatal "hauler store is having issues - check /opt/hauler/fileserver/_hauler_index.txt"
+  hauler store info > ${TMPDIR}/hauler/fileserver/_hauler_index.txt || fatal "hauler store is having issues - check ${TMPDIR}/hauler/fileserver/_hauler_index.txt"
 
   # add dvd iso
-  # mkdir -p /opt/hauler/fileserver/dvd
-  # mount -o loop Rocky-8.9-x86_64-dvd1.iso /opt/fileserver/dvd
+  # mkdir -p ${TMPDIR}/hauler/fileserver/dvd
+  # mount -o loop Rocky-8.9-x86_64-dvd1.iso ${TMPDIR}/fileserver/dvd
 
   # create yum repo file
-  cat << EOF > /opt/hauler/fileserver/hauler.repo
+  cat << EOF > ${TMPDIR}/hauler/fileserver/hauler.repo
 [hauler]
 name=Hauler Air Gap Server
 baseurl=http://$serverIp:8080
@@ -301,7 +304,7 @@ EOF
   fi
   
   # create repo for rancher rpms
-  createrepo /opt/hauler/fileserver > /dev/null 2>&1 || fatal "createrepo did not finish correctly, please run manually `createrepo /opt/hauler/fileserver`"
+  createrepo ${TMPDIR}/hauler/fileserver > /dev/null 2>&1 || fatal "createrepo did not finish correctly, please run manually \"createrepo ${TMPDIR}/hauler/fileserver\""
 
 fi
 
@@ -440,7 +443,7 @@ function deploy_control () {
 
   # install helm 
   info "installing helm"
-  cd /opt/hauler
+  cd ${TMPDIR}/hauler
   curl -sfL http://$serverIp:8080/$(curl -sfL http://$serverIp:8080/ | grep helm | sed -e 's/<[^>]*>//g') | tar -zxvf - > /dev/null 2>&1
   install -m 755 linux-amd64/helm /usr/local/bin || fatal "Failed to install helm to /usr/local/bin"
 
@@ -543,8 +546,8 @@ function usage () {
   echo ""
   echo " - Build 3 vms with 4cpu and 8gb of ram"
   echo -e "   - On 1st node run, as $RED"root"$NO_COLOR:"
-  echo -e "     -$BLUE mkdir /opt/hauler && tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C /opt/hauler"$NO_COLOR
-  echo -e "     -$BLUE cd /opt/hauler; $0 control"$NO_COLOR
+  echo -e "     -$BLUE mkdir ${TMPDIR}/hauler && tar -I zstd -vxf hauler_airgap_$(date '+%m_%d_%y').zst -C ${TMPDIR}/hauler"$NO_COLOR
+  echo -e "     -$BLUE cd ${TMPDIR}/hauler; $0 control"$NO_COLOR
   echo ""
   echo -e "   - On 2nd, and 3rd nodes run, as $RED"root"$NO_COLOR:"
   echo -e "      -$BLUE curl -sfL http://$serverIp:8080/hauler_all_the_things.sh | bash -s -- worker $serverIp "$NO_COLOR
