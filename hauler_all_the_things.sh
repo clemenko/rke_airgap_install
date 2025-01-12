@@ -14,6 +14,7 @@ set -ebpf
 
 # application domain name
 export DOMAIN=awesome.sauce
+export LOGIN='' # Set to your docker.io ID to enable login and account usage capacity.
 export TMPDIR=/var/tmp
 
 ######  NO MOAR EDITS #######
