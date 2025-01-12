@@ -14,7 +14,7 @@ set -ebpf
 
 # application domain name
 export DOMAIN=awesome.sauce
-
+export LOGIN=''
 
 ######  NO MOAR EDITS #######
 # color
@@ -79,6 +79,14 @@ function build () {
   info_ok
 
   cd /opt/hauler
+
+  # Permit user to use Docker login to the repositories to bypass login limits if imposed.
+  if [ ! -z "${LOGIN}" ] ; then
+    LOGIN_PW=""
+    read -sp "Need login to docker.com for \"${LOGIN}\": " LOGIN_PW
+    /usr/local/bin/hauler login docker.io -u ${LOGIN} -p "${LOGIN_PW}"
+    unset LOGIN_PW
+  fi
 
   info "creating hauler manifest"
   # versions
