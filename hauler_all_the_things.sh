@@ -14,7 +14,7 @@ set -ebpf
 
 # application domain name
 export DOMAIN=awesome.sauce
-export LOGIN=''
+export LOGIN=''  # Set to your docker.io ID to enable login and account usage capacity.
 
 ######  NO MOAR EDITS #######
 # color
