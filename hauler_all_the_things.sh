@@ -16,6 +16,7 @@ set -ebpf
 export DOMAIN=awesome.sauce
 export LOGIN='' # Set to your docker.io ID to enable login and account usage capacity.
 export TMPDIR=/var/tmp
+export HAULER_BIN=/usr/local/bin/hauler
 
 ######  NO MOAR EDITS #######
 # color
@@ -71,7 +72,7 @@ function build () {
 
   # get hauler if needed
   echo -e -n "checking hauler "
-  command -v hauler >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found, installing ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | bash  > /dev/null 2>&1; }
+  command -v ${HAULER_BIN} >/dev/null 2>&1 || { echo -e -n "$RED" " ** hauler was not found, installing ** ""$NO_COLOR"; curl -sfL https://get.hauler.dev | bash  > /dev/null 2>&1; }
   info_ok
 
   # get jq if needed
@@ -86,7 +87,7 @@ function build () {
   if [ ! -z "${LOGIN}" ] ; then
     LOGIN_PW=""
     read -sp "Need login to docker.com for \"${LOGIN}\": " LOGIN_PW
-    /usr/local/bin/hauler login docker.io -u ${LOGIN} -p "${LOGIN_PW}"
+    ${HAULER_BIN} login docker.io -u ${LOGIN} -p "${LOGIN_PW}"
     unset LOGIN_PW
   fi
 
@@ -195,11 +196,11 @@ EOF
   echo -n "  - created airgap_hauler.yaml"; info_ok
 
   warn "- hauler store sync - will take some time..."
-  hauler store sync -f ${TMPDIR}/hauler/airgap_hauler.yaml || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
+  ${HAULER_BIN} store sync -f ${TMPDIR}/hauler/airgap_hauler.yaml || { fatal "hauler failed to sync - check airgap_hauler.yaml for errors" ; }
   echo -n "  - synced"; info_ok
   
   # copy hauler binary
-  rsync -avP /usr/local/bin/hauler ${TMPDIR}/hauler/hauler > /dev/null 2>&1
+  rsync -avP ${HAULER_BIN} ${TMPDIR}/hauler/hauler > /dev/null 2>&1
 
   warn "- compressing all the things - will take a minute"
   tar -I zstd -cf ${TMPDIR}/hauler_airgap_$(date '+%m_%d_%y').zst $(ls) > /dev/null 2>&1
@@ -230,10 +231,10 @@ if [ $(ss -tln | grep "8080\|5000" | wc -l) != 2 ]; then
   info "setting up hauler"
 
   # install
-  if [ ! -f /usr/local/bin/hauler ]; then  install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin" ; fi
+  if [ ! -f ${HAULER_BIN} ]; then  install -m 755 hauler /usr/local/bin || fatal "Failed to Install Hauler to /usr/local/bin" ; fi
 
   # load
-#  hauler store load ${TMPDIR}/hauler/haul.tar.zst || fatal "Failed to load hauler store"
+#  ${HAULER_BIN} store load ${TMPDIR}/hauler/haul.tar.zst || fatal "Failed to load hauler store"
 
   # add systemd file
 cat << EOF > /etc/systemd/system/hauler@.service
@@ -273,10 +274,10 @@ EOF
   # wait for fileserver to come up.
   until [ $(ls -1 ${TMPDIR}/hauler/fileserver/ | wc -l) -gt 9 ]; do sleep 2; done
  
-  until hauler store info > /dev/null 2>&1; do sleep 5; done
+  until ${HAULER_BIN} store info > /dev/null 2>&1; do sleep 5; done
 
   # generate an index file
-  hauler store info > ${TMPDIR}/hauler/fileserver/_hauler_index.txt || fatal "hauler store is having issues - check ${TMPDIR}/hauler/fileserver/_hauler_index.txt"
+  ${HAULER_BIN} store info > ${TMPDIR}/hauler/fileserver/_hauler_index.txt || fatal "hauler store is having issues - check ${TMPDIR}/hauler/fileserver/_hauler_index.txt"
 
   # add dvd iso
   # mkdir -p ${TMPDIR}/hauler/fileserver/dvd
