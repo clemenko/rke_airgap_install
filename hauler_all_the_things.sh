@@ -460,6 +460,7 @@ function deploy_worker () {
   base
 
   # setup RKE2
+  info "setting up rke2 agent"
   mkdir -p /etc/rancher/rke2/
   echo -e "server: https://$serverIp:9345\ntoken: bootstrapAllTheThings\nwrite-kubeconfig-mode: 0600\n#profile: cis-1.23\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
   
