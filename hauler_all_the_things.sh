@@ -101,7 +101,7 @@ function build () {
 
   # images
 cat << EOF > airgap_hauler.yaml
-apiVersion: content.hauler.cattle.io/v1alpha1
+apiVersion: content.hauler.cattle.io/v1
 kind: Images
 metadata:
   name: rancher-images
@@ -148,7 +148,7 @@ EOF
 
 cat << EOF >> airgap_hauler.yaml
 ---
-apiVersion: content.hauler.cattle.io/v1alpha1
+apiVersion: content.hauler.cattle.io/v1
 kind: Charts
 metadata:
   name: rancher-charts
@@ -167,7 +167,7 @@ spec:
       repoURL: https://neuvector.github.io/neuvector-helm/
       version: $NEU_VERSION
 ---
-apiVersion: content.hauler.cattle.io/v1alpha1
+apiVersion: content.hauler.cattle.io/v1
 kind: Files
 metadata:
   name: rancher-files
