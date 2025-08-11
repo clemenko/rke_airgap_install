@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Special openSuse version.
+# Special openSuse version - Use with caution!
 
 # mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/zypper_all_the_things.sh && chmod 755 zypper_all_the_things.sh
 
