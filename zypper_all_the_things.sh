@@ -417,10 +417,10 @@ function deploy_worker () {
   
   # install rke2
   cd /opt/rke2_install/
-  curl -#OL http://$serverIp:8080/rke2-images.linux-amd64.tar.zst
-  curl -#OL http://$serverIp:8080/rke2.linux-amd64.tar.gz
-  curl -#OL http://$serverIp:8080/sha256sum-amd64.txt
-  curl -#OL http://$serverIp:8080/install.sh
+  curl -#OL http://$serverIp:8080/rke2-images.linux-amd64.tar.zst > /dev/null 2>&1
+  curl -#OL http://$serverIp:8080/rke2.linux-amd64.tar.gz > /dev/null 2>&1
+  curl -#OL http://$serverIp:8080/sha256sum-amd64.txt > /dev/null 2>&1
+  curl -#OL http://$serverIp:8080/install.sh > /dev/null 2>&1
 
   INSTALL_RKE2_ARTIFACT_PATH=/opt/rke2_install sh /opt/rke2_install/install.sh 
   systemctl enable --now rke2-agent.service > /dev/null 2>&1 || fatal "rke2-agent didn't start"
