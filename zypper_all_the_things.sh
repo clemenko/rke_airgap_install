@@ -14,7 +14,6 @@ set -ebpf
 # application domain name
 export DOMAIN=awesome.sauce
 
-
 ######  NO MOAR EDITS #######
 # color
 export RED='\x1b[0;31m'
@@ -70,7 +69,7 @@ function build () {
 
   # get jq if needed
   echo -e -n "checking jq "
-  command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found, installing ** ""$NO_COLOR"; yum install epel-release -y  > /dev/null 2>&1; zypper -n in jq > /dev/null 2>&1; }
+  command -v jq >/dev/null 2>&1 || { echo -e -n "$RED" " ** jq was not found, installing ** ""$NO_COLOR"; zypper -n in jq > /dev/null 2>&1; }
   info_ok
 
   cd /opt/hauler
@@ -172,7 +171,7 @@ spec:
     - path: https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/rke2.linux-amd64.tar.gz
     - path: https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/sha256sum-amd64.txt
     - path: https://get.rke2.io/
-      name: hauler-install.sh
+      name: install.sh
     - path: https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r .tag_name)-linux-amd64.tar.gz
     - path: https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/zypper_all_the_things.sh
 EOF
