@@ -2,7 +2,7 @@
 
 # Special openSuse version.
 
-# mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/zypper_all_the_things.sh && chmod 755 hauler_all_the_things.sh
+# mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/zypper_all_the_things.sh && chmod 755 zypper_all_the_things.sh
 
 # -----------
 # this script is designed to bootstrap a POC cluster using Hauler
