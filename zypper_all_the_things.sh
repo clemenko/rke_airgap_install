@@ -416,12 +416,13 @@ function deploy_worker () {
   echo -e "server: https://$serverIp:9345\ntoken: bootstrapAllTheThings\nwrite-kubeconfig-mode: 0600\n#profile: cis-1.23\nkube-apiserver-arg:\n- \"authorization-mode=RBAC,Node\"\nkubelet-arg:\n- \"protect-kernel-defaults=true\" " > /etc/rancher/rke2/config.yaml
   
   # install rke2
+  cd /opt/rke2_install/
   curl -#OL http://$serverIp:8080/rke2-images.linux-amd64.tar.zst
   curl -#OL http://$serverIp:8080/rke2.linux-amd64.tar.gz
   curl -#OL http://$serverIp:8080/sha256sum-amd64.txt
   curl -#OL http://$serverIp:8080/install.sh
 
-  INSTALL_RKE2_ARTIFACT_PATH=/opt/hauler/fileserver sh /opt/hauler/fileserver/install.sh 
+  INSTALL_RKE2_ARTIFACT_PATH=/opt/rke2_install sh /opt/rke2_install/install.sh 
   systemctl enable --now rke2-agent.service > /dev/null 2>&1 || fatal "rke2-agent didn't start"
   info "worker node running"
 }
