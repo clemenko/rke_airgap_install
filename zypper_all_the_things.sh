@@ -399,7 +399,7 @@ function deploy_control () {
   echo "------------------------------------------------------------------------------------"
   echo -e "  Run: $BLUE 'source ~/.bashrc' "$NO_COLOR
   echo    "  Run on the worker nodes"
-  echo -e "  - '$BLUE curl -sfL http://$serverIp:8080/hauler_all_the_things.sh | bash -s -- worker $serverIp $NO_COLOR'"
+  echo -e "  - '$BLUE curl -sfL http://$serverIp:8080/zypper_all_the_things.sh | bash -s -- worker $serverIp $NO_COLOR'"
   echo "------------------------------------------------------------------------------------"
 }
 
@@ -505,7 +505,7 @@ function usage () {
   echo -e "     -$BLUE cd /opt/hauler; $0 control"$NO_COLOR
   echo ""
   echo -e "   - On 2nd, and 3rd nodes run, as $RED"root"$NO_COLOR:"
-  echo -e "      -$BLUE curl -sfL http://$serverIp:8080/hauler_all_the_things.sh | bash -s -- worker $serverIp "$NO_COLOR
+  echo -e "      -$BLUE curl -sfL http://$serverIp:8080/zypper_all_the_things.sh | bash -s -- worker $serverIp "$NO_COLOR
   echo ""
   echo " - Application Setup from 1st node install"
   echo -e "   - Longhorn : $0$BLUE longhorn"$NO_COLOR
