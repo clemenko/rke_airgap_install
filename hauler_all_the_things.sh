@@ -3,7 +3,7 @@
 # mkdir /opt/hauler/; cd /opt/hauler; curl -#OL https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh && chmod 755 hauler_all_the_things.sh
 
 # test script
-# ./hauler_all_the_things.sh build && echo "0.0.0.0 docker.io index.docker.io quay.io gcr.io" >> /etc/hosts && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && sleep 45 && ./hauler_all_the_things.sh rancher && sleep 30 && ./hauler_all_the_things.sh neuvector
+# ./hauler_all_the_things.sh build && echo "0.0.0.0 docker.io index.docker.io quay.io gcr.io" >> /etc/hosts && ./hauler_all_the_things.sh control && source ~/.bashrc && ./hauler_all_the_things.sh longhorn && sleep 45 && ./hauler_all_the_things.sh rancher
 
 # -----------
 # this script is designed to bootstrap a POC cluster using Hauler
@@ -37,7 +37,7 @@ export server=$2
 
 # el version
 export EL_ver=  #set to el8 or el9 or the script will figure it out
-if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; fi
+if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; if [ $EL = "el1" ]; then fatal "EL10 is not supported" ; fi;  fi
 
 if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
 
@@ -176,7 +176,7 @@ spec:
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-common-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-agent-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
     - path: https://github.com/rancher/rke2-packaging/releases/download/v$RKE_VERSION%2Brke2r1.stable.0/rke2-server-$RKE_VERSION.rke2r1-0.$EL.x86_64.rpm
-    - path: https://github.com/rancher/rke2-selinux/releases/download/v0.18.stable.1/rke2-selinux-0.18-1.$EL.noarch.rpm
+    - path: https://github.com/rancher/rke2-selinux/releases/download/v0.21.stable.1/rke2-selinux-0.21-1.$EL.noarch.rpm
     - path: https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r .tag_name)-linux-amd64.tar.gz
     - path: https://raw.githubusercontent.com/clemenko/rke_airgap_install/main/hauler_all_the_things.sh
   # - path: https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.4-x86_64-dvd.iso
@@ -475,13 +475,6 @@ function longhorn () {
   # deploy longhorn with local helm/images
   info "deploying longhorn"
     helm upgrade -i longhorn oci://$serverIp:5000/hauler/longhorn --namespace longhorn-system --create-namespace --set ingress.enabled=true --set ingress.host=longhorn.$DOMAIN --plain-http
-}
-
-################################# neuvector ################################
-function neuvector () {
-  # deploy neuvector with local helm/images
-  info "deploying neuvector"
-  helm upgrade -i neuvector --namespace neuvector oci://$serverIp:5000/hauler/core --create-namespace --set manager.ingress.enabled=true --set controller.pvc.enabled=true --set manager.ingress.host=neuvector.$DOMAIN --plain-http
 }
 
 ################################# rancher ################################
