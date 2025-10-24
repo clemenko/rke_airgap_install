@@ -15,7 +15,6 @@ set -ebpf
 # application domain name
 export DOMAIN=awesome.sauce
 
-
 ######  NO MOAR EDITS #######
 # color
 export RED='\x1b[0;31m'
@@ -559,7 +558,6 @@ case "$1" in
         control) deploy_control;;
         worker) deploy_worker;;
         serve) hauler_setup;;
-        neuvector) neuvector;;
         longhorn) longhorn;;
         rancher) rancher;;
         validate) validate;;
