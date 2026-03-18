@@ -10,7 +10,7 @@
 # this is NOT meant for production!
 # -----------
 
-set -euf -o pipefail
+set -ebpf
 
 # application domain name
 export DOMAIN=awesome.sauce
@@ -32,10 +32,10 @@ function info_ok { echo -e "$GREEN" "ok" "$NO_COLOR" ; }
 export PATH=$PATH:/usr/local/bin
 
 # set server Ip here or from the command line
-export server=$2
+export server=$2   
 
 # el version
-export EL_ver=  #set to el8 or el9 or the script will figure it out
+export EL_ver=""   #set to el8 or el9 or the script will figure it out
 if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '%{RELEASE}' rpm | grep -o "el[[:digit:]]" )} ; if [ $EL = "el1" ]; then fatal "EL10 is not supported" ; fi;  fi
 
 if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
@@ -252,7 +252,7 @@ EOF
   sleep 30
 
   # wait for fileserver to come up.
-  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) -gt 9 ]; do sleep 2; done
+  until [ $(ls -1 /opt/hauler/fileserver/ | wc -l) -gt 8 ]; do sleep 2; done
  
   until hauler store info > /dev/null 2>&1; do sleep 5; done
 
