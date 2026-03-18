@@ -10,7 +10,7 @@
 # this is NOT meant for production!
 # -----------
 
-set -ebpf
+set -euf -o pipefail
 
 # application domain name
 export DOMAIN=awesome.sauce
@@ -40,7 +40,7 @@ if type rpm > /dev/null 2>&1 ; then export EL=${EL_ver:-$(rpm -q --queryformat '
 
 if [ "$1" != "build" ] && [ $(uname) != "Darwin" ] ; then export serverIp=${server:-$(hostname -I | awk '{ print $1 }')} ; fi
 
-if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ "$1" = "serve" ] || [ "$1" = "neuvector" ] || [ "$1" = "longhorn" ] || [ "$1" = "rancher" ] || [ "$1" = "validate" ])  ; then fatal "please run $0 as root"; fi
+if [ $(whoami) != "root" ] && ([ "$1" = "control" ] || [ "$1" = "worker" ] || [ "$1" = "serve" ] || [ "$1" = "longhorn" ] || [ "$1" = "rancher" ] || [ "$1" = "validate" ])  ; then fatal "please run $0 as root"; fi
 
 ################################# build ################################
 function build () {
@@ -86,17 +86,13 @@ function build () {
   export CERT_VERSION=$(echo $dzver | jq -r '."cert-manager"') 
   export RANCHER_VERSION=$(echo $dzver | jq -r '."rancher"')
   export LONGHORN_VERSION=$(echo $dzver | jq -r '."longhorn"')
-  #export NEU_VERSION=$(echo $dzver | jq -r '."neuvector"')
-  # neuvector chart has different version than code
-  export NEU_VERSION=$(curl -s https://api.github.com/repos/neuvector/neuvector-helm/releases/latest | jq -r .tag_name)
 
   # temp dir
   mkdir -p hauler_temp
 
   # repod
   helm repo add jetstack https://charts.jetstack.io --force-update > /dev/null 2>&1
-  helm repo add longhorn https://charts.longhorn.io --force-update> /dev/null 2>&1
-  helm repo add neuvector https://neuvector.github.io/neuvector-helm/ --force-update> /dev/null 2>&1
+  helm repo add longhorn https://charts.longhorn.io --force-update > /dev/null 2>&1
 
   # images
 cat << EOF > airgap_hauler.yaml
@@ -113,12 +109,11 @@ spec:
 EOF
 
   for i in $(helm template jetstack/cert-manager --version $CERT_VERSION | awk '$1 ~ /image:/ {print $2}' | sed 's/\"//g'); do echo "    - name: "$i >> airgap_hauler.yaml; done
-  for i in $(helm template neuvector/core --version $NEU_VERSION | awk '$1 ~ /image:/ {print $2}' | sed -e 's/\"//g'); do echo "    - name: "$i >> airgap_hauler.yaml; done
   for i in $(curl -sL https://github.com/longhorn/longhorn/releases/download/$LONGHORN_VERSION/longhorn-images.txt); do echo "    - name: "$i >> airgap_hauler.yaml; done
   for i in $(curl -sL https://github.com/rancher/rke2/releases/download/v$RKE_VERSION%2Brke2r1/rke2-images-all.linux-amd64.txt|grep -v "sriov\|cilium\|vsphere"); do echo "    - name: "$i >> airgap_hauler.yaml ; done
 
   curl -sL https://github.com/rancher/rancher/releases/download/$RANCHER_VERSION/rancher-images.txt -o hauler_temp/orig-rancher-images.txt
-  sed -E '/neuvector|minio|gke|aks|eks|sriov|harvester|mirrored|longhorn|thanos|tekton|istio|hyper|jenkins|windows/d' hauler_temp/orig-rancher-images.txt > hauler_temp/cleaned-rancher-images.txt
+  sed -E '/minio|gke|aks|eks|sriov|harvester|mirrored|longhorn|thanos|tekton|istio|hyper|jenkins|windows/d' hauler_temp/orig-rancher-images.txt > hauler_temp/cleaned-rancher-images.txt
   
   # capi fixes
   grep cluster-api hauler_temp/orig-rancher-images.txt >> hauler_temp/cleaned-rancher-images.txt
@@ -162,9 +157,6 @@ spec:
     - name: longhorn
       repoURL: https://charts.longhorn.io
       version: $LONGHORN_VERSION
-    - name: core
-      repoURL: https://neuvector.github.io/neuvector-helm/
-      version: $NEU_VERSION
 ---
 apiVersion: content.hauler.cattle.io/v1
 kind: Files
@@ -388,7 +380,7 @@ sysctl -p > /dev/null 2>&1
 
   info "adding yum repo"
     # add repo 
-  curl -sfL http://$serverIp:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo || fatal "check `http://$serverIp:8080/hauler.repo` to ensure the hauler.repo exists"
+  curl -sfL http://$serverIp:8080/hauler.repo -o /etc/yum.repos.d/hauler.repo || fatal "check "http://$serverIp:8080/hauler.repo" to ensure the hauler.repo exists"
 
     # set registry override
   mkdir -p /etc/rancher/rke2/
@@ -428,7 +420,7 @@ function deploy_control () {
   # set up ssl passthrough for nginx
   echo -e "---\napiVersion: helm.cattle.io/v1\nkind: HelmChartConfig\nmetadata:\n  name: rke2-ingress-nginx\n  namespace: kube-system\nspec:\n  valuesContent: |-\n    controller:\n      config:\n        use-forwarded-headers: true\n      extraArgs:\n        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
 
-  # insall rke2 - stig'd
+  # install rke2 - stig'd
   yum install -y --disablerepo=* --enablerepo=hauler rke2-server rke2-common rke2-selinux > /dev/null 2>&1 || fatal "yum install rke2 packages didn't work. check the hauler fileserver service."
   systemctl enable --now rke2-server.service > /dev/null 2>&1 || fatal "rke2-server didn't start"
 
@@ -523,7 +515,6 @@ function usage () {
   echo -e " $0$BLUE control$NO_COLOR # deploy on a control plane server"
   echo -e " $0$BLUE worker$NO_COLOR # deploy on a worker"
   echo "-------------------------------------------------"
-  echo " $0 neuvector # deploy neuvector"
   echo " $0 longhorn # deploy longhorn"
   echo " $0 rancher # deploy rancher"
   echo " $0 validate # validate all the image locations"
@@ -546,7 +537,6 @@ function usage () {
   echo " - Application Setup from 1st node install"
   echo -e "   - Longhorn : $0$BLUE longhorn"$NO_COLOR
   echo -e "   - Rancher : $0$BLUE rancher"$NO_COLOR
-  echo -e "   - NeuVector : $0$BLUE neuvector"$NO_COLOR
   echo ""
   echo "-------------------------------------------------"
   echo ""
