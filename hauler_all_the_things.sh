@@ -324,7 +324,6 @@ net.ipv4.tcp_tw_reuse=1
 net.ipv4.tcp_fin_timeout=15
 
 # The maximum number of "backlogged sockets".  Default is 128.
-net.core.somaxconn=4096
 net.core.netdev_max_backlog=4096
 
 # 16MB per socket - which sounds like a lot,
